@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: sonora-server
+    runtime: go
+    rootDir: server
+    plan: free
+    autoDeploy: true
+    buildCommand: go mod tidy && go build -o sonora-server main.go
+    startCommand: ./sonora-server
+    healthCheckPath: /health
+    envVars:
+      - key: JWT_SIGNING_KEY
+        sync: false
+      - key: TOKEN_ISSUER
+        value: sonora-self-hosted
+      - key: TOKEN_TTL_MINUTES
+        value: "60"
+      - key: CANVAS_UPSTREAM_BASE_URL
+        value: https://artwork-sonora.koiiverse.cloud
+      - key: CANVAS_UPSTREAM_TOKEN
+        sync: false
