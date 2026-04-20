@@ -539,6 +539,8 @@ func newServer(cfg Config) *Server {
 func (s *Server) routes() http.Handler {
 	mux := http.NewServeMux()
 
+	mux.HandleFunc("/", s.handleLandingPage)
+
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{"ok": true})
 	})
@@ -568,6 +570,183 @@ func cors(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+func (s *Server) handleLandingPage(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/" {
+		http.NotFound(w, r)
+		return
+	}
+	if r.Method != http.MethodGet {
+		writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	html := `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sonora Server</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --bg2: #121a33;
+      --card: rgba(255,255,255,0.08);
+      --text: #e8eeff;
+      --muted: #b6c2eb;
+      --accent: #7c9bff;
+      --accent2: #68e0ff;
+      --border: rgba(255,255,255,0.14);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, Segoe UI, system-ui, -apple-system, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(1200px 600px at -10% -20%, #2a3f82 0%, transparent 60%),
+        radial-gradient(900px 500px at 110% 0%, #1e5b7a 0%, transparent 55%),
+        linear-gradient(160deg, var(--bg), var(--bg2));
+      display: grid;
+      place-items: center;
+      padding: 28px;
+    }
+    .wrap {
+      width: min(980px, 100%);
+      background: linear-gradient(180deg, rgba(255,255,255,.1), rgba(255,255,255,.04));
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 20px 70px rgba(0,0,0,.45);
+      backdrop-filter: blur(8px);
+    }
+    .hero {
+      padding: 34px 30px 22px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(120deg, rgba(124,155,255,.16), rgba(104,224,255,.08));
+    }
+    .badge {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      font-size: 12px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 6px 10px;
+      color: var(--muted);
+      background: rgba(0,0,0,.16);
+    }
+    h1 {
+      margin: 14px 0 8px;
+      font-size: clamp(30px, 4vw, 44px);
+      line-height: 1.08;
+      letter-spacing: -.02em;
+    }
+    .sub {
+      margin: 0;
+      color: var(--muted);
+      max-width: 760px;
+      font-size: 16px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+      padding: 22px 22px 0;
+    }
+    .card {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      background: var(--card);
+    }
+    .card h3 {
+      margin: 0 0 8px;
+      font-size: 16px;
+    }
+    .card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .meta {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin: 18px 22px 22px;
+      padding: 16px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: rgba(0,0,0,.18);
+    }
+    .meta strong { color: #fff; }
+    .links {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+    .btn {
+      text-decoration: none;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: 10px;
+      font-size: 13px;
+      background: rgba(255,255,255,.04);
+    }
+    .btn:hover { border-color: rgba(255,255,255,.3); }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="hero">
+      <span class="badge">Sonora • Online API</span>
+      <h1>Sonora Listen Together Server</h1>
+      <p class="sub">
+        Self-hosted backend for online rooms, token issuance, and Canvas proxy integration.
+        Built for real-time synchronized listening with a modern and privacy-focused architecture.
+      </p>
+    </section>
+
+    <section class="grid">
+      <article class="card">
+        <h3>Listen Together</h3>
+        <p>Create sessions, resolve join codes, and sync playback in real time over WebSocket.</p>
+      </article>
+      <article class="card">
+        <h3>Runtime Tokens</h3>
+        <p>Short-lived JWT tokens secure Together and Canvas endpoints without shipping static secrets.</p>
+      </article>
+      <article class="card">
+        <h3>Canvas Proxy</h3>
+        <p>Server-side Canvas integration keeps upstream credentials off the Android client.</p>
+      </article>
+      <article class="card">
+        <h3>Health & Deploy</h3>
+        <p>Production-friendly endpoints with lightweight deployment on free-tier cloud platforms.</p>
+      </article>
+    </section>
+
+    <section class="meta">
+      <div><strong>Developer:</strong> Susil Kumar</div>
+      <div><strong>Project:</strong> Sonora</div>
+      <div><strong>Status API:</strong> <code>/health</code></div>
+      <div class="links">
+        <a class="btn" href="/health">Health Check</a>
+        <a class="btn" href="/v1/auth/token">Token Endpoint (POST)</a>
+      </div>
+    </section>
+  </main>
+</body>
+</html>`
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(html))
 }
 
 func (s *Server) handleIssueToken(w http.ResponseWriter, r *http.Request) {
