@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"math"
@@ -21,22 +22,24 @@ import (
 )
 
 type Config struct {
-	Port               string
-	JWTSigningKey      string
-	TokenIssuer        string
-	TokenTTL           time.Duration
-	CanvasUpstreamBase string
+	Port                string
+	JWTSigningKey       string
+	TokenIssuer         string
+	TokenTTL            time.Duration
+	CanvasUpstreamBase  string
 	CanvasUpstreamToken string
+	WSWriteTimeout      time.Duration
 }
 
 func loadConfig() Config {
 	cfg := Config{
-		Port:               envOrDefault("PORT", "8080"),
-		JWTSigningKey:      envOrDefault("JWT_SIGNING_KEY", "dev-only-change-me"),
-		TokenIssuer:        envOrDefault("TOKEN_ISSUER", "sonora-self-hosted"),
-		TokenTTL:           parseMinutes(envOrDefault("TOKEN_TTL_MINUTES", "60")),
-		CanvasUpstreamBase: strings.TrimRight(envOrDefault("CANVAS_UPSTREAM_BASE_URL", "https://artwork-sonora.koiiverse.cloud"), "/"),
+		Port:                envOrDefault("PORT", "8080"),
+		JWTSigningKey:       envOrDefault("JWT_SIGNING_KEY", "dev-only-change-me"),
+		TokenIssuer:         envOrDefault("TOKEN_ISSUER", "sonora-self-hosted"),
+		TokenTTL:            parseMinutes(envOrDefault("TOKEN_TTL_MINUTES", "60")),
+		CanvasUpstreamBase:  strings.TrimRight(envOrDefault("CANVAS_UPSTREAM_BASE_URL", "https://artwork-sonora.koiiverse.cloud"), "/"),
 		CanvasUpstreamToken: strings.TrimSpace(os.Getenv("CANVAS_UPSTREAM_TOKEN")),
+		WSWriteTimeout:      parseSeconds(envOrDefault("WS_WRITE_TIMEOUT_SECONDS", "3"), 3),
 	}
 	return cfg
 }
@@ -53,6 +56,14 @@ func parseMinutes(raw string) time.Duration {
 	n, err := time.ParseDuration(raw + "m")
 	if err != nil || n <= 0 {
 		return 60 * time.Minute
+	}
+	return n
+}
+
+func parseSeconds(raw string, fallback int) time.Duration {
+	n, err := time.ParseDuration(raw + "s")
+	if err != nil || n <= 0 {
+		return time.Duration(fallback) * time.Second
 	}
 	return n
 }
@@ -853,31 +864,31 @@ func (s *Server) handleTogetherWS(w http.ResponseWriter, r *http.Request) {
 
 	var hello ClientHello
 	if err := conn.ReadJSON(&hello); err != nil {
-		_ = conn.WriteJSON(ServerError{Type: "server_error", Message: "Invalid hello"})
+		_ = s.writeJSONWithTimeout(conn, ServerError{Type: "server_error", Message: "Invalid hello"})
 		return
 	}
 	if hello.Type != "client_hello" {
-		_ = conn.WriteJSON(ServerError{Type: "server_error", SessionID: &hello.SessionID, Message: "Expected client_hello"})
+		_ = s.writeJSONWithTimeout(conn, ServerError{Type: "server_error", SessionID: &hello.SessionID, Message: "Expected client_hello"})
 		return
 	}
 	if hello.ProtocolVersion != 1 {
-		_ = conn.WriteJSON(ServerError{Type: "server_error", SessionID: &hello.SessionID, Message: "Unsupported protocol version"})
+		_ = s.writeJSONWithTimeout(conn, ServerError{Type: "server_error", SessionID: &hello.SessionID, Message: "Unsupported protocol version"})
 		return
 	}
 
 	room := s.store.bySessionLookup(hello.SessionID)
 	if room == nil {
-		_ = conn.WriteJSON(ServerError{Type: "server_error", SessionID: &hello.SessionID, Message: "Session not found"})
+		_ = s.writeJSONWithTimeout(conn, ServerError{Type: "server_error", SessionID: &hello.SessionID, Message: "Session not found"})
 		return
 	}
 
 	peer, welcome, err := s.registerPeer(room, conn, hello)
 	if err != nil {
-		_ = conn.WriteJSON(ServerError{Type: "server_error", SessionID: &hello.SessionID, Message: err.Error()})
+		_ = s.writeJSONWithTimeout(conn, ServerError{Type: "server_error", SessionID: &hello.SessionID, Message: err.Error()})
 		return
 	}
 
-	if err := conn.WriteJSON(welcome); err != nil {
+	if err := s.writeJSONWithTimeout(conn, welcome); err != nil {
 		s.unregisterPeer(room, peer)
 		return
 	}
@@ -894,7 +905,7 @@ func (s *Server) handleTogetherWS(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if state := room.currentRoomState(); state != nil && (peer.IsHost || peer.Approved || !room.Settings.RequireHostApprovalToJoin) {
-		_ = conn.WriteJSON(RoomStateMessage{Type: "room_state", State: *state})
+		_ = s.writeJSONWithTimeout(conn, RoomStateMessage{Type: "room_state", State: *state})
 	}
 
 	for {
@@ -963,7 +974,7 @@ func (s *Server) registerPeer(room *Room, conn *websocket.Conn, hello ClientHell
 	if isHost {
 		if room.hostPeer != nil && room.hostPeer.Conn != nil {
 			sid := room.SessionID
-			_ = room.hostPeer.Conn.WriteJSON(ServerError{Type: "server_error", SessionID: &sid, Message: "Host replaced"})
+			_ = s.writeJSONWithTimeout(room.hostPeer.Conn, ServerError{Type: "server_error", SessionID: &sid, Message: "Host replaced"})
 			_ = room.hostPeer.Conn.Close()
 		}
 		room.hostPeer = peer
@@ -991,6 +1002,21 @@ func (s *Server) unregisterPeer(room *Room, peer *Peer) {
 	}
 }
 
+func (s *Server) writeJSONWithTimeout(conn *websocket.Conn, payload any) error {
+	if conn == nil {
+		return errors.New("nil websocket connection")
+	}
+	deadline := time.Now().Add(s.cfg.WSWriteTimeout)
+	if err := conn.SetWriteDeadline(deadline); err != nil {
+		return err
+	}
+	writeErr := conn.WriteJSON(payload)
+	if err := conn.SetWriteDeadline(time.Time{}); err != nil && writeErr == nil {
+		writeErr = err
+	}
+	return writeErr
+}
+
 func (s *Server) handlePeerMessage(room *Room, peer *Peer, msg TogetherMessage) {
 	switch msg.Type {
 	case "heartbeat_ping":
@@ -998,7 +1024,7 @@ func (s *Server) handlePeerMessage(room *Room, peer *Peer, msg TogetherMessage) 
 		if err := json.Unmarshal(msg.Raw, &ping); err != nil {
 			return
 		}
-		_ = peer.Conn.WriteJSON(HeartbeatPong{
+		_ = s.writeJSONWithTimeout(peer.Conn, HeartbeatPong{
 			Type:                  "heartbeat_pong",
 			SessionID:             room.SessionID,
 			PingID:                ping.PingID,
@@ -1032,7 +1058,7 @@ func (s *Server) handlePeerMessage(room *Room, peer *Peer, msg TogetherMessage) 
 			return
 		}
 		if !peer.IsHost {
-			_ = host.Conn.WriteJSON(req)
+			_ = s.writeJSONWithTimeout(host.Conn, req)
 		}
 	case "add_track_request":
 		var req AddTrackRequest
@@ -1049,7 +1075,7 @@ func (s *Server) handlePeerMessage(room *Room, peer *Peer, msg TogetherMessage) 
 			return
 		}
 		if !peer.IsHost {
-			_ = host.Conn.WriteJSON(req)
+			_ = s.writeJSONWithTimeout(host.Conn, req)
 		}
 	case "join_decision":
 		if !peer.IsHost {
@@ -1064,7 +1090,7 @@ func (s *Server) handlePeerMessage(room *Room, peer *Peer, msg TogetherMessage) 
 			return
 		}
 		if !decision.Approved {
-			_ = target.Conn.WriteJSON(decision)
+			_ = s.writeJSONWithTimeout(target.Conn, decision)
 			_ = target.Conn.Close()
 			s.unregisterPeer(room, target)
 			reason := "Rejected"
@@ -1073,10 +1099,10 @@ func (s *Server) handlePeerMessage(room *Room, peer *Peer, msg TogetherMessage) 
 		}
 		target.Approved = true
 		target.Participant.IsPending = false
-		_ = target.Conn.WriteJSON(decision)
+		_ = s.writeJSONWithTimeout(target.Conn, decision)
 		s.broadcastParticipantJoined(room, target.Participant)
 		if state := room.currentRoomState(); state != nil {
-			_ = target.Conn.WriteJSON(RoomStateMessage{Type: "room_state", State: *state})
+			_ = s.writeJSONWithTimeout(target.Conn, RoomStateMessage{Type: "room_state", State: *state})
 		}
 	case "kick":
 		if !peer.IsHost {
@@ -1090,7 +1116,7 @@ func (s *Server) handlePeerMessage(room *Room, peer *Peer, msg TogetherMessage) 
 		if target == nil {
 			return
 		}
-		_ = target.Conn.WriteJSON(kick)
+		_ = s.writeJSONWithTimeout(target.Conn, kick)
 		_ = target.Conn.Close()
 		s.unregisterPeer(room, target)
 		s.broadcastParticipantLeft(room, target.Participant.ID, kick.Reason)
@@ -1111,7 +1137,7 @@ func (s *Server) handlePeerMessage(room *Room, peer *Peer, msg TogetherMessage) 
 			room.banned[target.ClientID] = true
 		}
 		room.mu.Unlock()
-		_ = target.Conn.WriteJSON(ban)
+		_ = s.writeJSONWithTimeout(target.Conn, ban)
 		_ = target.Conn.Close()
 		s.unregisterPeer(room, target)
 		s.broadcastParticipantLeft(room, target.Participant.ID, ban.Reason)
@@ -1138,7 +1164,7 @@ func (s *Server) findPeer(room *Room, participantID string) *Peer {
 func (s *Server) sendCodeError(conn *websocket.Conn, sessionID, message, code string) {
 	codeCopy := code
 	sid := sessionID
-	_ = conn.WriteJSON(ServerError{Type: "server_error", SessionID: &sid, Message: message, Code: &codeCopy})
+	_ = s.writeJSONWithTimeout(conn, ServerError{Type: "server_error", SessionID: &sid, Message: message, Code: &codeCopy})
 }
 
 func (s *Server) notifyHostJoinRequest(room *Room, participant TogetherParticipant) {
@@ -1146,7 +1172,7 @@ func (s *Server) notifyHostJoinRequest(room *Room, participant TogetherParticipa
 	if host == nil {
 		return
 	}
-	_ = host.Conn.WriteJSON(JoinRequestMessage{
+	_ = s.writeJSONWithTimeout(host.Conn, JoinRequestMessage{
 		Type:        "join_request",
 		SessionID:   room.SessionID,
 		Participant: participant,
@@ -1184,11 +1210,25 @@ func (s *Server) broadcastToApproved(room *Room, payload any, exclude *Peer) {
 		}
 	}
 	room.mu.RUnlock()
+
+	slowPeers := make([]*Peer, 0)
 	for _, p := range peers {
 		if p.Conn == nil {
 			continue
 		}
-		_ = p.Conn.WriteJSON(payload)
+		if err := s.writeJSONWithTimeout(p.Conn, payload); err != nil {
+			slowPeers = append(slowPeers, p)
+		}
+	}
+	if len(slowPeers) == 0 {
+		return
+	}
+
+	for _, p := range slowPeers {
+		reason := fmt.Sprintf("slow peer dropped: %v", p.Participant.ID)
+		_ = p.Conn.Close()
+		s.unregisterPeer(room, p)
+		s.broadcastParticipantLeft(room, p.Participant.ID, &reason)
 	}
 }
 
@@ -1251,7 +1291,7 @@ func (s *Server) handleCanvasProxy(w http.ResponseWriter, r *http.Request) {
 func (s *Server) broadcastServerIssueToGuest(peer *Peer, sessionID, message, code string) {
 	sid := sessionID
 	codeCopy := code
-	_ = peer.Conn.WriteJSON(ServerError{Type: "server_error", SessionID: &sid, Message: message, Code: &codeCopy})
+	_ = s.writeJSONWithTimeout(peer.Conn, ServerError{Type: "server_error", SessionID: &sid, Message: message, Code: &codeCopy})
 }
 
 func main() {

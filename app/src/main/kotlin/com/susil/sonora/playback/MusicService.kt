@@ -523,6 +523,10 @@ class MusicService :
     private var togetherLastSentControlAction: com.susil.sonora.together.ControlAction? = null
     @Volatile
     private var togetherPendingGuestControl: TogetherPendingGuestControl? = null
+    @Volatile
+    private var togetherForceBroadcastUntilElapsedMs: Long = 0L
+    @Volatile
+    private var togetherHostReconnectAttempts: Int = 0
 
     private fun isTogetherApplyingRemote(): Boolean = togetherApplyingRemote
     private val togetherHostId: String = "host"
@@ -2184,6 +2188,9 @@ class MusicService :
 
             server.start(port)
             togetherServer = server
+            promoteToStartedService()
+            ensureStartedAsForeground()
+            cancelIdleStop()
 
             scope.launch(SilentHandler) {
                 togetherSessionState.value =
@@ -2215,7 +2222,9 @@ class MusicService :
                                     )
                             }
                         }
-                        kotlinx.coroutines.delay(400)
+                        val now = android.os.SystemClock.elapsedRealtime()
+                        val delayMs = if (now < togetherForceBroadcastUntilElapsedMs) 120L else 400L
+                        kotlinx.coroutines.delay(delayMs)
                     }
                 }
         }
@@ -2314,14 +2323,42 @@ class MusicService :
                     clientId = getOrCreateTogetherClientId(),
                     bearerToken = togetherToken,
                 )
+            togetherHostReconnectAttempts = 0
 
             onlineHost.onEvent = { event ->
                 ioScope.launch(SilentHandler) {
+                    if (event is com.susil.sonora.together.TogetherServerEvent.Disconnected) {
+                        if (event.expected) {
+                            togetherHostReconnectAttempts = 0
+                        } else {
+                            val reconnectBaseUrl = com.susil.sonora.together.TogetherOnlineEndpoint.baseUrlOrNull(dataStore)
+                            val reconnectWsUrl =
+                                reconnectBaseUrl?.let {
+                                    com.susil.sonora.together.TogetherOnlineEndpoint.onlineWebSocketUrlOrNull(
+                                        rawWsUrl = created.wsUrl,
+                                        baseUrl = it,
+                                    )
+                                }
+                            if (reconnectWsUrl != null && togetherOnlineHost === onlineHost && togetherHostReconnectAttempts < 3) {
+                                togetherHostReconnectAttempts += 1
+                                kotlinx.coroutines.delay((togetherHostReconnectAttempts * 700L).coerceAtMost(2200L))
+                                runCatching { onlineHost.connect(reconnectWsUrl) }
+                                    .onFailure { reportException(it) }
+                                return@launch
+                            }
+                        }
+                    }
+                    if (event is com.susil.sonora.together.TogetherServerEvent.Error && event.throwable is CancellationException) {
+                        return@launch
+                    }
                     handleTogetherHostEvent(event) { onlineHost.currentSettings() }
                 }
             }
 
             togetherOnlineHost = onlineHost
+            promoteToStartedService()
+            ensureStartedAsForeground()
+            cancelIdleStop()
 
             scope.launch(SilentHandler) {
                 togetherSessionState.value =
@@ -2381,7 +2418,9 @@ class MusicService :
                                     )
                             }
                         }
-                        kotlinx.coroutines.delay(400)
+                        val now = android.os.SystemClock.elapsedRealtime()
+                        val delayMs = if (now < togetherForceBroadcastUntilElapsedMs) 120L else 400L
+                        kotlinx.coroutines.delay(delayMs)
                     }
                 }
         }
@@ -2504,7 +2543,14 @@ class MusicService :
                                 }
 
                                 "HOST_OFFLINE" -> {
-                                    showTogetherNotice(event.message, key = "HOST_OFFLINE")
+                                    scope.launch(SilentHandler) {
+                                        togetherSessionState.value =
+                                            com.susil.sonora.together.TogetherSessionState.Error(
+                                                message = getString(R.string.together_host_left_session),
+                                                recoverable = true,
+                                            )
+                                    }
+                                    ioScope.launch(SilentHandler) { stopTogetherInternal() }
                                 }
 
                                 else -> {
@@ -2733,7 +2779,14 @@ class MusicService :
                                     }
 
                                     "HOST_OFFLINE" -> {
-                                        showTogetherNotice(event.message, key = "HOST_OFFLINE")
+                                        scope.launch(SilentHandler) {
+                                            togetherSessionState.value =
+                                                com.susil.sonora.together.TogetherSessionState.Error(
+                                                    message = getString(R.string.together_host_left_session),
+                                                    recoverable = true,
+                                                )
+                                        }
+                                        ioScope.launch(SilentHandler) { stopTogetherInternal() }
                                     }
 
                                     else -> {
@@ -2776,16 +2829,24 @@ class MusicService :
                                 scope.launch(SilentHandler) {
                                     val currentState = togetherSessionState.value
                                     val detail = event.reason?.trim().takeUnless { it.isNullOrBlank() }
+                                    val fallback =
+                                        if (currentState is com.susil.sonora.together.TogetherSessionState.Joined &&
+                                            currentState.role is com.susil.sonora.together.TogetherRole.Guest
+                                        ) {
+                                            getString(R.string.together_host_left_session)
+                                        } else {
+                                            getString(R.string.network_unavailable)
+                                        }
+                                    val resolved =
+                                        when {
+                                            detail.isNullOrBlank() -> fallback
+                                            detail.contains("host", ignoreCase = true) &&
+                                                (detail.contains("offline", ignoreCase = true) || detail.contains("left", ignoreCase = true)) -> getString(R.string.together_host_left_session)
+                                            else -> detail
+                                        }
                                     togetherSessionState.value =
                                         com.susil.sonora.together.TogetherSessionState.Error(
-                                            message =
-                                                detail ?: if (currentState is com.susil.sonora.together.TogetherSessionState.Joined &&
-                                                    currentState.role is com.susil.sonora.together.TogetherRole.Guest
-                                                ) {
-                                                    getString(R.string.together_host_left_session)
-                                                } else {
-                                                    getString(R.string.network_unavailable)
-                                                },
+                                            message = resolved,
                                             recoverable = true,
                                         )
                                 }
@@ -2883,7 +2944,7 @@ class MusicService :
         togetherLastSentControlAction = action
         togetherLastSentControlAtElapsedMs = now
 
-        val timeout = if (togetherIsOnlineSession) 5000L else 2000L
+        val timeout = if (togetherIsOnlineSession) 1500L else 900L
         togetherPendingGuestControl =
             when (action) {
                 com.susil.sonora.together.ControlAction.Play ->
@@ -3098,16 +3159,14 @@ class MusicService :
                 (pending.desiredIsPlaying != null && state.isPlaying != pending.desiredIsPlaying) ||
                     (pending.desiredIndex != null && state.currentIndex != pending.desiredIndex) ||
                     (pending.desiredTrackId != null && currentTrackId != pending.desiredTrackId)
-            if (now >= pending.expiresAtElapsedMs) {
+            if (mismatch && now >= pending.expiresAtElapsedMs) {
                 if ((pending.desiredIndex != null || pending.desiredTrackId != null) &&
-                    now - pending.requestedAtElapsedMs >= 1200L &&
-                    mismatch
+                    now - pending.requestedAtElapsedMs >= 700L
                 ) {
                     showTogetherNotice(getString(R.string.together_song_change_failed), key = "GUEST_SEEK_TIMEOUT")
                 }
                 togetherPendingGuestControl = null
-            } else {
-                if (mismatch) return
+            } else if (!mismatch) {
                 togetherPendingGuestControl = null
             }
         }
@@ -3122,7 +3181,7 @@ class MusicService :
         val estimatedOnlineLatency =
             if (togetherIsOnlineSession) {
                 val rttEstimate = clockSnapshot?.estimatedRttMs ?: 600L
-                (rttEstimate / 2L).coerceIn(120L, 900L)
+                (rttEstimate / 2L).coerceIn(100L, 550L)
             } else {
                 0L
             }
@@ -3189,9 +3248,9 @@ class MusicService :
                         }
                     } else {
                         val drift = kotlin.math.abs(player.currentPosition - targetPos)
-                        val seekThreshold = if (togetherIsOnlineSession) 4000L else 2000L
-                        val threshold = if (state.isPlaying) seekThreshold else 200L
-                        
+                        val playingThreshold = if (togetherIsOnlineSession) 900L else 450L
+                        val threshold = if (state.isPlaying) playingThreshold else 150L
+
                         if (drift > threshold) {
                             player.seekTo(targetPos)
                             player.prepare()
@@ -3228,6 +3287,11 @@ class MusicService :
             }
     }
 
+    private fun requestHostStateBroadcastBurst(windowMs: Long = 1500L) {
+        val now = android.os.SystemClock.elapsedRealtime()
+        togetherForceBroadcastUntilElapsedMs = maxOf(togetherForceBroadcastUntilElapsedMs, now + windowMs)
+    }
+
     private suspend fun stopTogetherInternal() {
         togetherBroadcastJob?.cancel()
         togetherBroadcastJob = null
@@ -3253,6 +3317,8 @@ class MusicService :
         togetherLastSentControlAtElapsedMs = 0L
         togetherLastSentControlAction = null
         togetherPendingGuestControl = null
+        togetherForceBroadcastUntilElapsedMs = 0L
+        togetherHostReconnectAttempts = 0
 
         try {
             togetherClient?.disconnect()
@@ -3899,6 +3965,12 @@ class MusicService :
     }
 
     val timelineEmpty = player.currentTimeline.isEmpty || player.mediaItemCount == 0 || player.currentMediaItem == null
+    val hosting = togetherSessionState.value
+    if (hosting is com.susil.sonora.together.TogetherSessionState.Hosting ||
+        hosting is com.susil.sonora.together.TogetherSessionState.HostingOnline
+    ) {
+        requestHostStateBroadcastBurst()
+    }
     currentMediaMetadata.value = if (timelineEmpty) null else (mediaItem?.metadata ?: player.currentMetadata)
 
     scrobbleManager?.onSongStop()
@@ -4112,6 +4184,16 @@ class MusicService :
             }
         }
     }
+    val hostState = togetherSessionState.value
+    if ((events.contains(Player.EVENT_PLAY_WHEN_READY_CHANGED) ||
+            events.contains(Player.EVENT_POSITION_DISCONTINUITY) ||
+            events.contains(Player.EVENT_MEDIA_ITEM_TRANSITION)) &&
+        (hostState is com.susil.sonora.together.TogetherSessionState.Hosting ||
+            hostState is com.susil.sonora.together.TogetherSessionState.HostingOnline)
+    ) {
+        requestHostStateBroadcastBurst()
+    }
+
     if (events.contains(Player.EVENT_DEVICE_VOLUME_CHANGED)) {
         handleDeviceMuteStateChanged()
     }
@@ -4304,6 +4386,12 @@ class MusicService :
             }
             return
         }
+        val hostState = togetherSessionState.value
+        if (hostState is com.susil.sonora.together.TogetherSessionState.Hosting ||
+            hostState is com.susil.sonora.together.TogetherSessionState.HostingOnline
+        ) {
+            requestHostStateBroadcastBurst()
+        }
         if (shuffleModeEnabled) {
             applyCurrentFirstShuffleOrder()
         }
@@ -4332,6 +4420,12 @@ class MusicService :
                 )
             }
             return
+        }
+        val hostState = togetherSessionState.value
+        if (hostState is com.susil.sonora.together.TogetherSessionState.Hosting ||
+            hostState is com.susil.sonora.together.TogetherSessionState.HostingOnline
+        ) {
+            requestHostStateBroadcastBurst()
         }
         scope.launch {
             dataStore.edit { settings ->
@@ -5091,14 +5185,14 @@ class MusicService :
 
             val isPlaybackInactive = player.playbackState == Player.STATE_IDLE || player.mediaItemCount == 0
 
-            if (shouldStopServiceOnTaskRemoved(stopMusicOnTaskClearEnabled, isHostSessionActive, isPlaybackInactive)) {
-                if (isHostSessionActive && isPlaybackInactive) {
-                    runCatching { scope.launch { stopTogetherInternal() } }
-                    runCatching { togetherSessionState.value = com.susil.sonora.together.TogetherSessionState.Idle }
-                    stopSelf()
-                    return
-                }
+            if (isHostSessionActive) {
+                promoteToStartedService()
+                ensureStartedAsForeground()
+                cancelIdleStop()
+                return
+            }
 
+            if (shouldStopServiceOnTaskRemoved(stopMusicOnTaskClearEnabled, isHostSessionActive, isPlaybackInactive)) {
                 if (stopMusicOnTaskClearEnabled) {
                     runCatching { stopAndClearPlayback() }
                     runCatching {
