@@ -29,6 +29,11 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 sealed interface TogetherServerEvent {
+    data class Disconnected(
+        val expected: Boolean,
+        val reason: String? = null,
+    ) : TogetherServerEvent
+
     data class JoinRequested(
         val participant: TogetherParticipant,
     ) : TogetherServerEvent

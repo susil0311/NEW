@@ -202,6 +202,7 @@ import com.susil.sonora.constants.ScrobbleMinSongDurationKey
 import com.susil.sonora.constants.ScrobbleDelaySecondsKey
 import com.susil.sonora.constants.TogetherClientIdKey
 import com.susil.sonora.together.TogetherRuntimeAuth
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -2214,7 +2215,7 @@ class MusicService :
                                     )
                             }
                         }
-                        kotlinx.coroutines.delay(750)
+                        kotlinx.coroutines.delay(400)
                     }
                 }
         }
@@ -2380,7 +2381,7 @@ class MusicService :
                                     )
                             }
                         }
-                        kotlinx.coroutines.delay(750)
+                        kotlinx.coroutines.delay(400)
                     }
                 }
         }
@@ -2539,15 +2540,17 @@ class MusicService :
                             ioScope.launch(SilentHandler) { stopTogetherInternal() }
                         }
 
-                        com.susil.sonora.together.TogetherClientEvent.Disconnected -> {
+                        is com.susil.sonora.together.TogetherClientEvent.Disconnected -> {
                             val current = togetherSessionState.value
                             if (current is com.susil.sonora.together.TogetherSessionState.Idle) return@collect
+                            if (event.expected) return@collect
                             scope.launch(SilentHandler) {
                                 val currentState = togetherSessionState.value
+                                val detail = event.reason?.trim().takeUnless { it.isNullOrBlank() }
                                 togetherSessionState.value =
                                     com.susil.sonora.together.TogetherSessionState.Error(
                                         message =
-                                            if (currentState is com.susil.sonora.together.TogetherSessionState.Joined &&
+                                            detail ?: if (currentState is com.susil.sonora.together.TogetherSessionState.Joined &&
                                                 currentState.role is com.susil.sonora.together.TogetherRole.Guest
                                             ) {
                                                 getString(R.string.together_host_left_session)
@@ -2766,15 +2769,17 @@ class MusicService :
                                 ioScope.launch(SilentHandler) { stopTogetherInternal() }
                             }
 
-                            com.susil.sonora.together.TogetherClientEvent.Disconnected -> {
+                            is com.susil.sonora.together.TogetherClientEvent.Disconnected -> {
                                 val current = togetherSessionState.value
                                 if (current is com.susil.sonora.together.TogetherSessionState.Idle) return@collect
+                                if (event.expected) return@collect
                                 scope.launch(SilentHandler) {
                                     val currentState = togetherSessionState.value
+                                    val detail = event.reason?.trim().takeUnless { it.isNullOrBlank() }
                                     togetherSessionState.value =
                                         com.susil.sonora.together.TogetherSessionState.Error(
                                             message =
-                                                if (currentState is com.susil.sonora.together.TogetherSessionState.Joined &&
+                                                detail ?: if (currentState is com.susil.sonora.together.TogetherSessionState.Joined &&
                                                     currentState.role is com.susil.sonora.together.TogetherRole.Guest
                                                 ) {
                                                     getString(R.string.together_host_left_session)
@@ -2930,9 +2935,23 @@ class MusicService :
                 applyHostAddTrack(event.request.track, event.request.mode)
             }
 
+            is com.susil.sonora.together.TogetherServerEvent.Disconnected -> {
+                if (event.expected) return
+                val current = togetherSessionState.value
+                if (current is com.susil.sonora.together.TogetherSessionState.Idle) return
+                val message = event.reason?.trim().takeUnless { it.isNullOrBlank() } ?: getString(R.string.network_unavailable)
+                togetherSessionState.value =
+                    com.susil.sonora.together.TogetherSessionState.Error(
+                        message = message,
+                        recoverable = true,
+                    )
+                ioScope.launch(SilentHandler) { stopTogetherInternal() }
+            }
+
             is com.susil.sonora.together.TogetherServerEvent.Error -> {
                 val current = togetherSessionState.value
                 if (current is com.susil.sonora.together.TogetherSessionState.Idle) return
+                if (event.throwable is CancellationException) return
                 togetherSessionState.value =
                     com.susil.sonora.together.TogetherSessionState.Error(
                         message = event.message,
@@ -3097,9 +3116,16 @@ class MusicService :
         val sentAt = state.sentAtElapsedRealtimeMs
         if (sentAt > 0L && lastSentAt > 0L && sentAt <= lastSentAt) return
 
-        val offset = if (togetherIsOnlineSession) 0L else (togetherClock?.snapshot()?.estimatedOffsetMs ?: 0L)
+        val clockSnapshot = togetherClock?.snapshot()
+        val offset = if (togetherIsOnlineSession) 0L else (clockSnapshot?.estimatedOffsetMs ?: 0L)
         val correctedSentAt = sentAt + offset
-        val estimatedOnlineLatency = if (togetherIsOnlineSession) 1200L else 0L
+        val estimatedOnlineLatency =
+            if (togetherIsOnlineSession) {
+                val rttEstimate = clockSnapshot?.estimatedRttMs ?: 600L
+                (rttEstimate / 2L).coerceIn(120L, 900L)
+            } else {
+                0L
+            }
         val delta = if (togetherIsOnlineSession) estimatedOnlineLatency else (now - correctedSentAt).coerceAtLeast(0L)
         val targetPos =
             if (state.isPlaying) (state.positionMs + delta).coerceAtLeast(0L) else state.positionMs.coerceAtLeast(0L)

@@ -22,6 +22,7 @@ import io.ktor.websocket.readText
 import io.ktor.websocket.send
 import java.util.UUID
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
@@ -56,12 +57,15 @@ sealed interface TogetherClientEvent {
         val throwable: Throwable? = null,
     ) : TogetherClientEvent
 
+    data class Disconnected(
+        val expected: Boolean,
+        val reason: String? = null,
+    ) : TogetherClientEvent
+
     data class HeartbeatPong(
         val pong: com.susil.sonora.together.HeartbeatPong,
         val receivedAtElapsedRealtimeMs: Long,
     ) : TogetherClientEvent
-
-    data object Disconnected : TogetherClientEvent
 }
 
 @Immutable
@@ -148,6 +152,8 @@ class TogetherClient(
                         runLoop(this, joinInfo.sessionId)
                     }
                     return@launch
+                } catch (ce: CancellationException) {
+                    throw ce
                 } catch (t: Throwable) {
                     lastError = t
                 }
@@ -195,6 +201,8 @@ class TogetherClient(
                         runLoop(this, sessionId)
                     }
                     return@launch
+                } catch (ce: CancellationException) {
+                    throw ce
                 } catch (t: Throwable) {
                     lastError = t
                 }
@@ -282,6 +290,8 @@ class TogetherClient(
     }
 
     private suspend fun runLoop(session: WebSocketSession, sessionId: String) {
+        var expectedDisconnect = false
+        var disconnectReason: String? = null
         loopJob =
             scope.launch {
                 try {
@@ -325,6 +335,8 @@ class TogetherClient(
                                 if (message.sessionId == sessionId && message.participantId == selfParticipantId) {
                                     val detail = message.reason?.trim().orEmpty().ifBlank { "Kicked" }
                                     _events.tryEmit(TogetherClientEvent.Error(detail, null))
+                                    expectedDisconnect = true
+                                    disconnectReason = detail
                                     break
                                 }
                             }
@@ -333,6 +345,8 @@ class TogetherClient(
                                 if (message.sessionId == sessionId && message.participantId == selfParticipantId) {
                                     val detail = message.reason?.trim().orEmpty().ifBlank { "Banned" }
                                     _events.tryEmit(TogetherClientEvent.Error(detail, null))
+                                    expectedDisconnect = true
+                                    disconnectReason = detail
                                     break
                                 }
                             }
@@ -355,10 +369,14 @@ class TogetherClient(
                             else -> Unit
                         }
                     }
+                } catch (ce: CancellationException) {
+                    expectedDisconnect = true
+                    disconnectReason = "cancelled"
+                    throw ce
                 } catch (t: Throwable) {
                     _events.tryEmit(TogetherClientEvent.Error("Connection loop failed", t))
                 } finally {
-                    _events.tryEmit(TogetherClientEvent.Disconnected)
+                    _events.tryEmit(TogetherClientEvent.Disconnected(expected = expectedDisconnect, reason = disconnectReason))
                     _state.value = TogetherClientState.Idle
                 }
             }

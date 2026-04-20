@@ -22,6 +22,7 @@ import io.ktor.websocket.readText
 import io.ktor.websocket.send
 import java.util.UUID
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
@@ -127,9 +128,11 @@ class TogetherOnlineHost(
                             displayName = hostDisplayName.trim(),
                         )
                     send(TogetherJson.json.encodeToString(TogetherMessage.serializer(), hello))
-                    runLoop(this, candidate)
+                    runLoop(this)
                 }
                 return
+            } catch (ce: CancellationException) {
+                throw ce
             } catch (t: Throwable) {
                 lastError = t
             }
@@ -299,7 +302,8 @@ class TogetherOnlineHost(
         }
     }
 
-    private suspend fun runLoop(session: WebSocketSession, wsUrl: String) {
+    private suspend fun runLoop(session: WebSocketSession) {
+        var loopCancelled = false
         loopJob =
             scope.launch {
                 try {
@@ -380,6 +384,9 @@ class TogetherOnlineHost(
                             else -> Unit
                         }
                     }
+                } catch (ce: CancellationException) {
+                    loopCancelled = true
+                    throw ce
                 } catch (t: Throwable) {
                     onEvent?.invoke(TogetherServerEvent.Error("Connection loop failed", t))
                 } finally {
@@ -387,7 +394,12 @@ class TogetherOnlineHost(
                     guests.clear()
                     lastParticipants = emptyList()
                     runCatching { session.close(CloseReason(CloseReason.Codes.NORMAL, "Disconnected")) }
-                    onEvent?.invoke(TogetherServerEvent.Error("Disconnected", null))
+                    onEvent?.invoke(
+                        TogetherServerEvent.Disconnected(
+                            expected = loopCancelled,
+                            reason = if (loopCancelled) "cancelled" else "disconnected",
+                        ),
+                    )
                 }
             }
         loopJob?.join()
