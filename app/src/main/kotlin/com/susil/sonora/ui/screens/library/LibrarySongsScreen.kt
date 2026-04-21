@@ -44,6 +44,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
@@ -53,32 +54,33 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
-import com.susil.sonora.LocalPlayerAwareWindowInsets
-import com.susil.sonora.LocalPlayerConnection
-import com.susil.sonora.R
-import com.susil.sonora.constants.CONTENT_TYPE_HEADER
-import com.susil.sonora.constants.CONTENT_TYPE_SONG
-import com.susil.sonora.constants.HideExplicitKey
-import com.susil.sonora.constants.SongFilter
-import com.susil.sonora.constants.SongFilterKey
-import com.susil.sonora.constants.SongSortDescendingKey
-import com.susil.sonora.constants.SongSortType
-import com.susil.sonora.constants.SongSortTypeKey
-import com.susil.sonora.constants.YtmSyncKey
-import com.susil.sonora.extensions.toMediaItem
-import com.susil.sonora.extensions.togglePlayPause
-import com.susil.sonora.playback.queues.ListQueue
-import com.susil.sonora.ui.component.ChipsRow
-import com.susil.sonora.ui.component.HideOnScrollFAB
-import com.susil.sonora.ui.component.LocalMenuState
-import com.susil.sonora.ui.component.SongListItem
-import com.susil.sonora.ui.component.SortHeader
-import com.susil.sonora.ui.menu.SelectionSongMenu
-import com.susil.sonora.ui.menu.SongMenu
-import com.susil.sonora.ui.utils.ItemWrapper
-import com.susil.sonora.utils.rememberEnumPreference
-import com.susil.sonora.utils.rememberPreference
-import com.susil.sonora.viewmodels.LibrarySongsViewModel
+import moe.koiverse.archivetune.LocalPlayerAwareWindowInsets
+import moe.koiverse.archivetune.LocalPlayerConnection
+import moe.koiverse.archivetune.R
+import moe.koiverse.archivetune.constants.CONTENT_TYPE_HEADER
+import moe.koiverse.archivetune.constants.CONTENT_TYPE_SONG
+import moe.koiverse.archivetune.constants.DisableBlurKey
+import moe.koiverse.archivetune.constants.HideExplicitKey
+import moe.koiverse.archivetune.constants.SongFilter
+import moe.koiverse.archivetune.constants.SongFilterKey
+import moe.koiverse.archivetune.constants.SongSortDescendingKey
+import moe.koiverse.archivetune.constants.SongSortType
+import moe.koiverse.archivetune.constants.SongSortTypeKey
+import moe.koiverse.archivetune.constants.YtmSyncKey
+import moe.koiverse.archivetune.extensions.toMediaItem
+import moe.koiverse.archivetune.extensions.togglePlayPause
+import moe.koiverse.archivetune.playback.queues.ListQueue
+import moe.koiverse.archivetune.ui.component.ChipsRow
+import moe.koiverse.archivetune.ui.component.HideOnScrollFAB
+import moe.koiverse.archivetune.ui.component.LocalMenuState
+import moe.koiverse.archivetune.ui.component.SongListItem
+import moe.koiverse.archivetune.ui.component.SortHeader
+import moe.koiverse.archivetune.ui.menu.SelectionSongMenu
+import moe.koiverse.archivetune.ui.menu.SongMenu
+import moe.koiverse.archivetune.ui.utils.ItemWrapper
+import moe.koiverse.archivetune.utils.rememberEnumPreference
+import moe.koiverse.archivetune.utils.rememberPreference
+import moe.koiverse.archivetune.viewmodels.LibrarySongsViewModel
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -101,6 +103,7 @@ fun LibrarySongsScreen(
     val (sortDescending, onSortDescendingChange) = rememberPreference(SongSortDescendingKey, true)
 
     val (ytmSync) = rememberPreference(YtmSyncKey, true)
+    val (disableBlur) = rememberPreference(DisableBlurKey, false)
     val hideExplicit by rememberPreference(key = HideExplicitKey, defaultValue = false)
 
     val songs by viewModel.allSongs.collectAsState()
@@ -309,6 +312,11 @@ fun LibrarySongsScreen(
                         }
                     },
                     isSelected = songWrapper.isSelected && selection,
+                    swipeContentBackgroundColor = if (disableBlur) {
+                        MaterialTheme.colorScheme.surface
+                    } else {
+                        Color.Transparent
+                    },
                     modifier =
                     Modifier
                         .fillMaxWidth()

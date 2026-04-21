@@ -56,8 +56,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.susil.sonora.R
-import com.susil.sonora.ui.screens.Screens
+import moe.koiverse.archivetune.R
+import moe.koiverse.archivetune.ui.screens.Screens
 
 @Composable
 fun FloatingNavigationToolbar(

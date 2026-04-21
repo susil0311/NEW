@@ -15,7 +15,7 @@ import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
-import com.susil.sonora.LocalAnimationsDisabled
+import moe.koiverse.archivetune.LocalAnimationsDisabled
 
 object SettingsDimensions {
     val GroupCardCornerRadius = 16.dp

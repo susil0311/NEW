@@ -53,16 +53,16 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.susil.sonora.BuildConfig
-import com.susil.sonora.LocalAnimationsDisabled
-import com.susil.sonora.R
-import com.susil.sonora.constants.AccountEmailKey
-import com.susil.sonora.ui.component.IconButton
-import com.susil.sonora.ui.component.TopSearch
-import com.susil.sonora.ui.utils.backToMain
-import com.susil.sonora.utils.Updater
-import com.susil.sonora.utils.rememberPreference
-import com.susil.sonora.viewmodels.HomeViewModel
+import moe.koiverse.archivetune.BuildConfig
+import moe.koiverse.archivetune.LocalAnimationsDisabled
+import moe.koiverse.archivetune.R
+import moe.koiverse.archivetune.constants.AccountEmailKey
+import moe.koiverse.archivetune.ui.component.IconButton
+import moe.koiverse.archivetune.ui.component.TopSearch
+import moe.koiverse.archivetune.ui.utils.backToMain
+import moe.koiverse.archivetune.utils.Updater
+import moe.koiverse.archivetune.utils.rememberPreference
+import moe.koiverse.archivetune.viewmodels.HomeViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

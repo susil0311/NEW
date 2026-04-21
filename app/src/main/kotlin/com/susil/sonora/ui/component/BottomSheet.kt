@@ -55,10 +55,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
-import com.susil.sonora.LocalAnimationsDisabled
-import com.susil.sonora.constants.BottomSheetAnimationSpec
-import com.susil.sonora.constants.BottomSheetSoftAnimationSpec
-import com.susil.sonora.utils.rememberPreference
+import moe.koiverse.archivetune.LocalAnimationsDisabled
+import moe.koiverse.archivetune.constants.BottomSheetAnimationSpec
+import moe.koiverse.archivetune.constants.BottomSheetSoftAnimationSpec
+import moe.koiverse.archivetune.utils.rememberPreference
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.launch

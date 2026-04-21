@@ -3872,52 +3872,34 @@ class MusicService :
             }.isSuccess
         }
 
-        val playbackTracking = retryWithoutPlaybackLoginContext {
-            YTPlayerUtils.playerResponseForMetadata(mediaId)
-        }.onFailure { throwable ->
-            when (throwable) {
-                is YTPlayerUtils.InvalidPlaybackLoginContextException -> {
-                    promptLoginRecovery(mediaId, throwable.targetUrl)
-                }
+        val playbackUrl =
+            database.format(mediaId).first()?.playbackUrl
+                ?.takeIf { it.isNotBlank() }
+                ?: retryWithoutPlaybackLoginContext {
+                    YTPlayerUtils.playerResponseForMetadata(mediaId)
+                }.onFailure { throwable ->
+                    when (throwable) {
+                        is YTPlayerUtils.InvalidPlaybackLoginContextException -> {
+                            promptLoginRecovery(mediaId, throwable.targetUrl)
+                        }
 
-                is YTPlayerUtils.LoginRequiredForPlaybackException -> {
-                    promptLoginRecovery(mediaId, throwable.targetUrl)
-                }
+                        is YTPlayerUtils.LoginRequiredForPlaybackException -> {
+                            promptLoginRecovery(mediaId, throwable.targetUrl)
+                        }
 
-                else -> {
-                    Timber.tag("MusicService").w(
-                        throwable,
-                        "Failed to refresh remote playback tracking for %s",
-                        mediaId,
-                    )
-                }
-            }
-        }.getOrNull()?.playbackTracking
+                        else -> {
+                            Timber.tag("MusicService").w(
+                                throwable,
+                                "Failed to refresh remote playback tracking for %s",
+                                mediaId,
+                            )
+                        }
+                    }
+                }.getOrNull()?.playbackTracking?.videostatsPlaybackUrl?.baseUrl
+                    ?.trim()
+                    ?.takeIf { it.isNotEmpty() }
 
-        if (playbackTracking != null) {
-            val trackingUrls = listOfNotNull(
-                playbackTracking.videostatsPlaybackUrl?.baseUrl,
-                playbackTracking.videostatsWatchtimeUrl?.baseUrl,
-                playbackTracking.atrUrl?.baseUrl,
-            ).map { it.trim() }
-                .filter { it.isNotEmpty() }
-
-            var anySuccess = false
-            for (trackingUrl in trackingUrls) {
-                if (registerTrackingUrl(trackingUrl)) {
-                    anySuccess = true
-                }
-            }
-            return anySuccess
-        }
-
-        val cachedPlaybackUrl = database.format(mediaId).first()?.playbackUrl
-            ?.takeIf { it.isNotBlank() }
-        if (cachedPlaybackUrl != null) {
-            return registerTrackingUrl(cachedPlaybackUrl)
-        }
-
-        return false
+        return playbackUrl?.let { registerTrackingUrl(it) } ?: false
     }
 
     override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
@@ -4700,10 +4682,12 @@ class MusicService :
 
         val streamUrl = nonNullPlayback.streamUrl
 
+        val trackingExpiryMs = System.currentTimeMillis() + (nonNullPlayback.streamExpiresInSeconds * 1000L)
+
         playbackUrlCache[mediaId] =
             AuthScopedCacheValue(
                 url = streamUrl,
-                expiresAtMs = System.currentTimeMillis() + (nonNullPlayback.streamExpiresInSeconds * 1000L),
+                expiresAtMs = trackingExpiryMs,
                 authFingerprint = nonNullPlayback.authFingerprint,
             )
         val resolvedDataSpec = dataSpec.withUri(streamUrl.toUri())

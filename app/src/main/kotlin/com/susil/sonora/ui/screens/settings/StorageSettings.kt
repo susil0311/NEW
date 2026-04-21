@@ -50,26 +50,26 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil3.annotation.ExperimentalCoilApi
 import coil3.imageLoader
-import com.susil.sonora.LocalPlayerAwareWindowInsets
-import com.susil.sonora.LocalPlayerConnection
-import com.susil.sonora.R
-import com.susil.sonora.constants.MaxCanvasCacheSizeKey
-import com.susil.sonora.constants.MaxImageCacheSizeKey
-import com.susil.sonora.constants.MaxSongCacheSizeKey
-import com.susil.sonora.constants.SmartTrimmerKey
-import com.susil.sonora.extensions.directorySizeBytes
-import com.susil.sonora.extensions.tryOrNull
-import com.susil.sonora.ui.component.ActionPromptDialog
-import com.susil.sonora.ui.component.DefaultDialog
-import com.susil.sonora.ui.component.IconButton
-import com.susil.sonora.ui.component.ListPreference
-import com.susil.sonora.ui.component.PreferenceEntry
-import com.susil.sonora.ui.component.SwitchPreference
-import com.susil.sonora.ui.component.PreferenceGroupTitle
-import com.susil.sonora.ui.player.CanvasArtworkPlaybackCache
-import com.susil.sonora.ui.utils.backToMain
-import com.susil.sonora.ui.utils.formatFileSize
-import com.susil.sonora.utils.rememberPreference
+import moe.koiverse.archivetune.LocalPlayerAwareWindowInsets
+import moe.koiverse.archivetune.LocalPlayerConnection
+import moe.koiverse.archivetune.R
+import moe.koiverse.archivetune.constants.MaxCanvasCacheSizeKey
+import moe.koiverse.archivetune.constants.MaxImageCacheSizeKey
+import moe.koiverse.archivetune.constants.MaxSongCacheSizeKey
+import moe.koiverse.archivetune.constants.SmartTrimmerKey
+import moe.koiverse.archivetune.extensions.directorySizeBytes
+import moe.koiverse.archivetune.extensions.tryOrNull
+import moe.koiverse.archivetune.ui.component.ActionPromptDialog
+import moe.koiverse.archivetune.ui.component.DefaultDialog
+import moe.koiverse.archivetune.ui.component.IconButton
+import moe.koiverse.archivetune.ui.component.ListPreference
+import moe.koiverse.archivetune.ui.component.PreferenceEntry
+import moe.koiverse.archivetune.ui.component.SwitchPreference
+import moe.koiverse.archivetune.ui.component.PreferenceGroupTitle
+import moe.koiverse.archivetune.ui.player.CanvasArtworkPlaybackCache
+import moe.koiverse.archivetune.ui.utils.backToMain
+import moe.koiverse.archivetune.ui.utils.formatFileSize
+import moe.koiverse.archivetune.utils.rememberPreference
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -346,7 +346,7 @@ fun StorageSettings(
                 onConfirm = {
                     coroutineScope.launch(Dispatchers.IO) {
                         imageDiskCache.clear()
-                        com.susil.sonora.utils.ArtworkStorage.clear(context)
+                        moe.koiverse.archivetune.utils.ArtworkStorage.clear(context)
                     }
                     clearImageCacheDialog = false
                 },
