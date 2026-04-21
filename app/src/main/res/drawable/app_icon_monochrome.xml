@@ -1,4 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
-<bitmap xmlns:android="http://schemas.android.com/apk/res/android"
-    android:src="@drawable/about_splash"
-    android:antialias="true" />
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="185dp"
+    android:height="185dp"
+    android:viewportWidth="185"
+    android:viewportHeight="185">
+
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M 60,96 Q 60,93 63,93 L 69,93 Q 72,93 72,96 L 72,114 Q 72,117 69,117 L 63,117 Q 60,117 60,114 Z" />
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M 77,86 Q 77,83 80,83 L 86,83 Q 89,83 89,86 L 89,124 Q 89,127 86,127 L 80,127 Q 77,127 77,124 Z" />
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M 94,74 Q 94,71 97,71 L 103,71 Q 106,71 106,74 L 106,136 Q 106,139 103,139 L 97,139 Q 94,139 94,136 Z" />
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M 111,86 Q 111,83 114,83 L 120,83 Q 123,83 123,86 L 123,124 Q 123,127 120,127 L 114,127 Q 111,127 111,124 Z" />
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M 128,96 Q 128,93 131,93 L 137,93 Q 140,93 140,96 L 140,114 Q 140,117 137,117 L 131,117 Q 128,117 128,114 Z" />
+</vector>

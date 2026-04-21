@@ -1,238 +1,222 @@
-/*
- * Sonora Project Original (2026)
- * Chartreux Westia (github.com/koiverse)
- * Licensed Under GPL-3.0 | see git history for contributors
- * Don't remove this copyright holder!
- */
-
-
-
-
-@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
-
 package com.susil.sonora.ui.screens.settings
 
+import android.os.Build
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.BlendMode
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.asComposeRenderEffect
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.navigation.NavController
-import coil3.compose.AsyncImage
 import com.susil.sonora.BuildConfig
 import com.susil.sonora.R
-import com.susil.sonora.ui.component.IconButton
-import com.susil.sonora.ui.utils.backToMain
-import com.susil.sonora.LocalPlayerAwareWindowInsets
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.layout.only
-import androidx.compose.foundation.layout.WindowInsetsSides
-import androidx.datastore.preferences.core.edit
-import io.ktor.client.HttpClient
-import io.ktor.client.request.get
-import io.ktor.client.request.headers
-import io.ktor.client.statement.HttpResponse
-import io.ktor.client.statement.bodyAsText
-import io.ktor.http.HttpStatusCode
-import com.susil.sonora.constants.GitHubContributorsEtagKey
-import com.susil.sonora.constants.GitHubContributorsJsonKey
-import com.susil.sonora.constants.GitHubContributorsLastCheckedAtKey
-import com.susil.sonora.utils.dataStore
-import com.susil.sonora.utils.getAsync
-import org.json.JSONArray
+import kotlinx.coroutines.delay
 
-data class TeamMember(
-    val avatarUrl: String,
-    val name: String,
-    val position: String,
-    val profileUrl: String? = null,
-    val github: String? = null,
-    val website: String? = null,
-    val discord: String? = null
+@Composable
+private fun SonoraAnimatedLogo(
+    modifier: Modifier = Modifier,
+    size: Dp = 72.dp,
+) {
+    val barHeightFractions = listOf(0.30f, 0.52f, 0.70f, 0.52f, 0.30f)
+    val staggerMs = 150
+    val scales = remember { List(5) { Animatable(0f) } }
 
-)
-
-private data class GitHubContributor(
-    val login: String,
-    val avatarUrl: String,
-    val profileUrl: String,
-)
-
-private sealed interface ContributorsState {
-    data object Loading : ContributorsState
-    data class Loaded(val contributors: List<GitHubContributor>) : ContributorsState
-    data object Error : ContributorsState
-}
-
-private const val ContributorsCacheCheckIntervalMs: Long = 24 * 60 * 60 * 1000L
-
-private fun parseContributorsJson(
-    json: String,
-): List<GitHubContributor> {
-    val jsonArray = JSONArray(json)
-    val contributors = ArrayList<GitHubContributor>(jsonArray.length())
-    for (i in 0 until jsonArray.length()) {
-        val item = jsonArray.getJSONObject(i)
-        val login = item.optString("login", "")
-        val type = item.optString("type", "")
-        val avatarUrl = item.optString("avatar_url", "")
-        val profileUrl = item.optString("html_url", "")
-        val isBot =
-            type.equals("Bot", ignoreCase = true) ||
-                login.lowercase().endsWith("[bot]")
-
-        if (!isBot && login.isNotBlank() && avatarUrl.isNotBlank()) {
-            contributors.add(
-                GitHubContributor(
-                    login = login,
-                    avatarUrl = avatarUrl,
-                    profileUrl = profileUrl,
-                )
+    LaunchedEffect(Unit) {
+        scales.forEachIndexed { i, anim ->
+            delay(i * staggerMs.toLong())
+            anim.animateTo(
+                targetValue = 1f,
+                animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing),
             )
         }
     }
-    return contributors
-}
 
-private data class ContributorsNetworkResult(
-    val status: HttpStatusCode,
-    val body: String?,
-    val etag: String?,
-)
+    val infiniteTransition = rememberInfiniteTransition(label = "sonoraPulse")
+    val pulseValues =
+        barHeightFractions.mapIndexed { i, _ ->
+            infiniteTransition.animateFloat(
+                initialValue = 0.55f,
+                targetValue = 1f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(
+                        durationMillis = 700,
+                        delayMillis = i * staggerMs,
+                        easing = FastOutSlowInEasing,
+                    ),
+                    repeatMode = RepeatMode.Reverse,
+                ),
+                label = "bar$i",
+            )
+        }
 
-private suspend fun fetchRepoContributorsNetwork(
-    client: HttpClient,
-    owner: String,
-    repo: String,
-    perPage: Int = 100,
-    cachedEtag: String?,
-): ContributorsNetworkResult {
-    val response: HttpResponse =
-        client.get("https://api.github.com/repos/$owner/$repo/contributors?per_page=$perPage") {
-            headers {
-                append("Accept", "application/vnd.github+json")
-                append("User-Agent", "Sonora")
-                if (!cachedEtag.isNullOrBlank()) {
-                    append("If-None-Match", cachedEtag)
-                }
+    val barColors =
+        listOf(
+            Color(0xFFc084fc),
+            Color(0xFF9d6ff5),
+            Color(0xFF818cf8),
+            Color(0xFF5ba8f5),
+            Color(0xFF38bdf8),
+        )
+
+    Box(
+        modifier = modifier.size(size),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .background(
+                    brush = Brush.linearGradient(
+                        colors = listOf(Color(0xFF1a0533), Color(0xFF0d1a3a), Color(0xFF001a2e)),
+                    ),
+                    shape = RoundedCornerShape(size * 0.26f),
+                ),
+        )
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(size * 0.04f),
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = size * 0.14f),
+        ) {
+            barHeightFractions.forEachIndexed { i, fraction ->
+                val entranceScale = scales[i].value
+                val pulseScale by pulseValues[i]
+                val barMaxH = size * fraction * 0.72f
+                val barH = barMaxH * pulseScale * entranceScale
+                val barW = size * 0.085f
+
+                Box(
+                    modifier = Modifier
+                        .width(barW)
+                        .height(barH.coerceAtLeast(2.dp))
+                        .background(
+                            brush = Brush.verticalGradient(
+                                colors = listOf(barColors[i], barColors[i].copy(alpha = 0.6f)),
+                            ),
+                            shape = RoundedCornerShape(50),
+                        ),
+                )
             }
         }
-    val etag = response.headers["ETag"]
-    return when (response.status) {
-        HttpStatusCode.NotModified ->
-            ContributorsNetworkResult(
-                status = response.status,
-                body = null,
-                etag = cachedEtag ?: etag,
-            )
-
-        else ->
-            ContributorsNetworkResult(
-                status = response.status,
-                body = response.bodyAsText(),
-                etag = etag,
-            )
     }
 }
 
 @Composable
-fun OutlinedIconChip(
+private fun RowScope.SegmentedButton(
+    label: String,
     iconRes: Int,
-    contentDescription: String,
     onClick: () -> Unit,
-    text: String? = null,
 ) {
-    OutlinedButton(
-        onClick = onClick,
-        contentPadding = PaddingValues(
-            horizontal = if (text.isNullOrBlank()) 8.dp else 12.dp,
-            vertical = 6.dp,
-        ),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        colors = ButtonDefaults.outlinedButtonColors(
-            containerColor = Color.Transparent,
-            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-        ),
-        modifier = if (text.isNullOrBlank()) Modifier.size(32.dp) else Modifier,
-        shapes = ButtonDefaults.shapes(),
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+        modifier = Modifier
+            .weight(1f)
+            .height(72.dp)
+            .clickable(onClick = onClick),
     ) {
         Icon(
-            painter = painterResource(id = iconRes),
-            contentDescription = contentDescription,
-            modifier = Modifier.size(18.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            painter = painterResource(iconRes),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.size(22.dp),
         )
-        if (!text.isNullOrBlank()) {
-            Spacer(Modifier.width(6.dp))
-            Text(text = text, style = MaterialTheme.typography.labelLarge)
-        }
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
 @Composable
-fun OutlinedIconChipMembers(
-    iconRes: Int,
-    contentDescription: String?,
-    onClick: () -> Unit
-) {
-    OutlinedButton(
-        onClick = onClick,
-        contentPadding = PaddingValues(6.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        colors = ButtonDefaults.outlinedButtonColors(
-            containerColor = Color.Transparent,
-            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-        ),
-        modifier = Modifier.size(32.dp),
-        shapes = ButtonDefaults.shapes(),
-    ) {
-        Icon(
-            painter = painterResource(id = iconRes),
-            contentDescription = contentDescription,
-            modifier = Modifier.size(18.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
+private fun SectionTitle(title: String) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.primary,
+        fontWeight = FontWeight.Bold,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp, vertical = 4.dp),
+        textAlign = TextAlign.Start,
+    )
 }
 
+@Composable
+private fun AboutCard(
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
+    content: @Composable () -> Unit,
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
+        shape = RoundedCornerShape(28.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        tonalElevation = 1.dp,
+    ) {
+        content()
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -240,652 +224,268 @@ fun AboutScreen(
     navController: NavController,
     scrollBehavior: TopAppBarScrollBehavior,
 ) {
-    val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
-    val httpClient = remember { HttpClient() }
-    DisposableEffect(Unit) {
-        onDispose { httpClient.close() }
-    }
-    var contributorsState by remember { mutableStateOf<ContributorsState>(ContributorsState.Loading) }
-    LaunchedEffect(Unit) {
-        val cachedJson = context.dataStore.getAsync(GitHubContributorsJsonKey)
-        val cachedEtag = context.dataStore.getAsync(GitHubContributorsEtagKey)
-        val lastCheckedAt = context.dataStore.getAsync(GitHubContributorsLastCheckedAtKey, 0L)
-        val now = System.currentTimeMillis()
+    val colorScheme = MaterialTheme.colorScheme
 
-        val cachedContributors =
-            cachedJson
-                ?.takeIf { it.isNotBlank() }
-                ?.let { runCatching { parseContributorsJson(it) }.getOrNull() }
-
-        if (!cachedContributors.isNullOrEmpty()) {
-            contributorsState = ContributorsState.Loaded(cachedContributors)
-        }
-
-        val shouldCheckNetwork =
-            cachedJson.isNullOrBlank() || (now - lastCheckedAt) >= ContributorsCacheCheckIntervalMs
-
-        if (!shouldCheckNetwork) {
-            if (cachedContributors.isNullOrEmpty()) contributorsState = ContributorsState.Error
-            return@LaunchedEffect
-        }
-
-        val networkResult =
-            runCatching {
-                fetchRepoContributorsNetwork(
-                    client = httpClient,
-                    owner = "koiverse",
-                    repo = "Sonora",
-                    cachedEtag = cachedEtag,
-                )
-            }.getOrNull()
-
-        if (networkResult == null) {
-            if (cachedContributors.isNullOrEmpty()) contributorsState = ContributorsState.Error
-            return@LaunchedEffect
-        }
-
-        com.susil.sonora.utils.PreferenceStore.launchEdit(context.dataStore) {
-            this[GitHubContributorsLastCheckedAtKey] = now
-            networkResult.etag?.let { this[GitHubContributorsEtagKey] = it }
-            networkResult.body?.let { this[GitHubContributorsJsonKey] = it }
-        }
-
-        when {
-            networkResult.status == HttpStatusCode.NotModified -> {
-                if (cachedContributors.isNullOrEmpty()) {
-                    contributorsState = ContributorsState.Error
-                }
-            }
-
-            (networkResult.status.value in 200..299) && !networkResult.body.isNullOrBlank() -> {
-                val contributors = runCatching { parseContributorsJson(networkResult.body) }.getOrNull()
-                if (!contributors.isNullOrEmpty()) {
-                    contributorsState = ContributorsState.Loaded(contributors)
-                } else if (cachedContributors.isNullOrEmpty()) {
-                    contributorsState = ContributorsState.Error
-                }
-            }
-
-            else -> {
-                if (cachedContributors.isNullOrEmpty()) contributorsState = ContributorsState.Error
-            }
-        }
-    }
-
-    val leadDeveloper = TeamMember(
-        avatarUrl = "https://avatar-api.koiisannn.cloud/discord/avatar/886971572668219392",
-        name = "Chartreux Westia",
-        position = "Eh?",
-        profileUrl = "https://github.com/koiverse",
-        github = "https://github.com/koiverse",
-        website = "https://koiiverse.cloud",
-        discord = "https://discord.com/users/886971572668219392"
+    var logoAnimated by remember { mutableStateOf(false) }
+    val logoScale by animateFloatAsState(
+        targetValue = if (logoAnimated) 1f else 0.8f,
+        animationSpec = tween(durationMillis = 350),
+        label = "logoScale",
     )
 
-    val collaborators = listOf(
-        TeamMember(
-            avatarUrl = "https://avatars.githubusercontent.com/u/93458424?v=4",
-            name = "WTTexe",
-            position = "Word Synced Lyrics, Gradients and UI Changes for the better!",
-            profileUrl = "https://github.com/Windowstechtips",
-            github = "https://github.com/Windowstechtips",
-            website = null,
-            discord = "https://discord.com/users/840839409640800258"
-        ),
-        TeamMember(
-            avatarUrl = "https://avatars.githubusercontent.com/u/80542861?v=4",
-            name = "MO AGAMY",
-            position = "Metrolist Dev",
-            profileUrl = "https://github.com/mostafaalagamy",
-            github = "https://github.com/mostafaalagamy",
-            website = null,
-            discord = null
-        ),
-    )
+    LaunchedEffect(Unit) { logoAnimated = true }
 
     Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        containerColor = colorScheme.background,
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.about)) },
-                navigationIcon = {
-                    IconButton(
-                        onClick = navController::navigateUp,
-                        onLongClick = navController::backToMain,
-                    ) {
-                        Icon(
-                            painterResource(R.drawable.arrow_back),
-                            contentDescription = null,
-                        )
-                    }
-                },
-                scrollBehavior = scrollBehavior
-            )
-        }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .nestedScroll(scrollBehavior.nestedScrollConnection)
-                .verticalScroll(rememberScrollState())
-                .fillMaxWidth()
-                .padding(innerPadding)
-                .windowInsetsPadding(
-                    LocalPlayerAwareWindowInsets.current.only(
-                        WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
-                    )
-                ),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-
-            Spacer(
-                Modifier
-                    .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top))
-                    .heightIn(max = 16.dp)
-            )
-
-            Image(
-                painter = painterResource(R.drawable.about_splash),
-                contentDescription = null,
-                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onBackground),
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceContainer)
-                    .clickable { },
-            )
-
-            Row(
-                verticalAlignment = Alignment.Top,
-            ) {
-                Text(
-                    text = "Sonora",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
-                )
-            }
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = BuildConfig.VERSION_NAME,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.secondary,
+            Box {
+                Box(
                     modifier = Modifier
-                        .border(
-                            width = 1.dp,
-                            color = MaterialTheme.colorScheme.secondary,
-                            shape = CircleShape,
+                        .fillMaxWidth()
+                        .height(100.dp)
+                        .zIndex(10f)
+                        .then(
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                Modifier.graphicsLayer {
+                                    renderEffect = android.graphics.RenderEffect.createBlurEffect(
+                                        25f,
+                                        25f,
+                                        android.graphics.Shader.TileMode.CLAMP,
+                                    ).asComposeRenderEffect()
+                                }
+                            } else {
+                                Modifier
+                            },
                         )
-                        .padding(
-                            horizontal = 6.dp,
-                            vertical = 2.dp,
+                        .background(
+                            brush = Brush.verticalGradient(
+                                colors = listOf(
+                                    colorScheme.surface.copy(alpha = 0.98f),
+                                    colorScheme.surface.copy(alpha = 0.92f),
+                                    Color.Transparent,
+                                ),
+                            ),
                         ),
                 )
 
-                Spacer(Modifier.width(4.dp))
-
-                if (BuildConfig.DEBUG) {
-                    Spacer(Modifier.width(4.dp))
-
-                    Text(
-                        text = "DEBUG",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.secondary,
-                        modifier = Modifier
-                            .border(
-                                width = 1.dp,
-                                color = MaterialTheme.colorScheme.secondary,
-                                shape = CircleShape,
-                            )
-                            .padding(
-                                horizontal = 6.dp,
-                                vertical = 2.dp,
-                            ),
-                    )
-                } else {
-                    Spacer(Modifier.width(4.dp))
-
-                    Text(
-                        text = BuildConfig.ARCHITECTURE.uppercase(),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.secondary,
-                        modifier = Modifier
-                            .border(
-                                width = 1.dp,
-                                color = MaterialTheme.colorScheme.secondary,
-                                shape = CircleShape,
-                            )
-                            .padding(
-                                horizontal = 6.dp,
-                                vertical = 2.dp,
-                            ),
-                    )
-                }
-            }
-
-            Spacer(Modifier.height(4.dp))
-
-            Text(
-                text = "Koiverse",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.secondary,
-            )
-
-            Spacer(Modifier.height(8.dp))
-
-            Row {
-                IconButton(
-                    onClick = { uriHandler.openUri("https://github.com/koiverse/sonora") },
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.github),
-                        contentDescription = null
-                    )
-                }
-
-                Spacer(Modifier.width(8.dp))
-
-                IconButton(
-                    onClick = { uriHandler.openUri("https://sonora.koiiverse.cloud") },
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.website),
-                        contentDescription = null
-                    )
-                }
-
-                Spacer(Modifier.width(8.dp))
-
-                IconButton(
-                    onClick = { uriHandler.openUri("https://t.me/SonoraGC") },
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.telegram),
-                        contentDescription = null
-                    )
-                }
-
-                Spacer(Modifier.width(8.dp))
-
-                IconButton(
-                    onClick = { uriHandler.openUri("https://sociabuzz.com/chrtrxwstia") },
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.coffee),
-                        contentDescription = null
-                    )
-                }
-            }
-
-            Spacer(Modifier.height(16.dp))
-
-            SectionHeader(
-                title = "Lead Developer",
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-
-            Spacer(Modifier.height(8.dp))
-
-            LeadDeveloperCard(
-                member = leadDeveloper,
-                onOpenUri = uriHandler::openUri,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-            )
-
-            Spacer(Modifier.height(24.dp))
-
-            SectionHeader(
-                title = "Collaborators",
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-
-            Spacer(Modifier.height(8.dp))
-
-            Column(
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-            ) {
-                collaborators.forEach { member ->
-                    CollaboratorCard(
-                        member = member,
-                        onOpenUri = uriHandler::openUri,
-                    )
-                }
-            }
-
-            Spacer(Modifier.height(24.dp))
-
-            SectionHeader(
-                title = "Contributors",
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-
-            Spacer(Modifier.height(8.dp))
-
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                shape = RoundedCornerShape(20.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(14.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    ContributorGrid(
-                        state = contributorsState,
-                        onOpenProfile = uriHandler::openUri,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-            }
-
-            Spacer(Modifier.height(24.dp))
-        }
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun ContributorGrid(
-    state: ContributorsState,
-    onOpenProfile: (String) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val contributors = when (state) {
-        ContributorsState.Loading -> null
-        ContributorsState.Error -> emptyList()
-        is ContributorsState.Loaded -> state.contributors.take(20)
-    }
-
-    val columns = 4
-    val spacing = 10.dp
-    BoxWithConstraints(modifier = modifier) {
-        val itemWidth = (maxWidth - spacing * (columns - 1)) / columns
-        val tileShape = RoundedCornerShape(22.dp)
-        val tileColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
-
-        FlowRow(
-            maxItemsInEachRow = columns,
-            horizontalArrangement = Arrangement.spacedBy(spacing, Alignment.CenterHorizontally),
-            verticalArrangement = Arrangement.spacedBy(spacing),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            if (contributors == null) {
-                repeat(6) {
-                    Surface(
-                        shape = tileShape,
-                        color = tileColor,
-                        modifier = Modifier.width(itemWidth)
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
+                TopAppBar(
+                    title = {
+                        Text(
+                            text = "About",
+                            fontWeight = FontWeight.Bold,
+                        )
+                    },
+                    navigationIcon = {
+                        Box(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 14.dp)
+                                .clip(CircleShape)
+                                .clickable(onClick = navController::navigateUp)
+                                .padding(8.dp),
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-                            )
-                            Spacer(Modifier.height(10.dp))
-                            Box(
-                                modifier = Modifier
-                                    .height(14.dp)
-                                    .fillMaxWidth(0.7f)
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back",
                             )
                         }
-                    }
-                }
-            } else {
-                contributors.forEach { contributor ->
-                    Surface(
-                        shape = tileShape,
-                        color = tileColor,
-                        modifier = Modifier
-                            .width(itemWidth)
-                            .clickable(enabled = contributor.profileUrl.isNotBlank()) {
-                                if (contributor.profileUrl.isNotBlank()) {
-                                    onOpenProfile(contributor.profileUrl)
-                                }
-                            }
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 14.dp, horizontal = 10.dp)
-                        ) {
-                            AsyncImage(
-                                model = contributor.avatarUrl,
-                                contentDescription = contributor.login,
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-                            )
-                            Spacer(Modifier.height(10.dp))
-                            Text(
-                                text = contributor.login,
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
-                    }
-                }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent,
+                        scrolledContainerColor = colorScheme.surfaceContainer,
+                    ),
+                    modifier = Modifier.zIndex(11f),
+                    scrollBehavior = scrollBehavior,
+                )
             }
-        }
-    }
-}
-
-@Composable
-private fun SectionHeader(
-    title: String,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.primary,
-        )
-        Spacer(Modifier.width(12.dp))
-        HorizontalDivider(
-            modifier = Modifier.weight(1f),
-            color = MaterialTheme.colorScheme.outlineVariant,
-        )
-    }
-}
-
-@Composable
-private fun LeadDeveloperCard(
-    member: TeamMember,
-    onOpenUri: (String) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(24.dp),
-    ) {
-        Column(
+        },
+    ) { paddingValues ->
+        LazyColumn(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
+                .fillMaxSize()
+                .padding(paddingValues),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 100.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            AsyncImage(
-                model = member.avatarUrl,
-                contentDescription = member.name,
-                modifier = Modifier
-                    .size(80.dp)
-                    .clip(CircleShape)
-                    .border(
-                        width = 1.dp,
-                        color = MaterialTheme.colorScheme.primary,
-                        shape = CircleShape
-                    )
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
-            )
+            item {
+                Spacer(Modifier.height(16.dp))
 
-            Spacer(Modifier.height(12.dp))
+                AboutCard {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 28.dp),
+                    ) {
+                        SonoraAnimatedLogo(
+                            size = 72.dp,
+                            modifier = Modifier.scale(logoScale),
+                        )
 
-            Text(
-                text = member.name,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
+                        Spacer(Modifier.height(14.dp))
 
-            Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = "Sonora",
+                            style = MaterialTheme.typography.headlineMedium.copy(
+                                fontWeight = FontWeight.Black,
+                            ),
+                            color = colorScheme.onSurface,
+                        )
 
-            Text(
-                text = member.position,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.secondary,
-            )
+                        Spacer(Modifier.height(8.dp))
 
-            Spacer(Modifier.height(12.dp))
-
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                member.github?.let { url ->
-                    OutlinedIconChip(
-                        iconRes = R.drawable.github,
-                        contentDescription = "GitHub",
-                        onClick = { onOpenUri(url) },
-                    )
+                        Surface(
+                            shape = CircleShape,
+                            color = colorScheme.secondaryContainer,
+                        ) {
+                            Text(
+                                text = "v${BuildConfig.VERSION_NAME}",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = colorScheme.onSecondaryContainer,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            )
+                        }
+                    }
                 }
 
-                member.website?.takeIf { it.isNotBlank() }?.let { url ->
-                    OutlinedIconChip(
-                        iconRes = R.drawable.website,
-                        contentDescription = "Website",
-                        onClick = { onOpenUri(url) },
-                    )
-                }
+                Spacer(Modifier.height(24.dp))
 
-                member.discord?.let { url ->
-                    OutlinedIconChip(
-                        iconRes = R.drawable.alternate_email,
-                        contentDescription = "Discord",
-                        onClick = { onOpenUri(url) },
-                    )
-                }
+                HorizontalDivider(
+                    modifier = Modifier.padding(horizontal = 32.dp),
+                    thickness = 2.dp,
+                    color = colorScheme.onSurface.copy(alpha = 0.15f),
+                )
+
+                Spacer(Modifier.height(28.dp))
             }
-        }
-    }
-}
 
-@Composable
-private fun CollaboratorCard(
-    member: TeamMember,
-    onOpenUri: (String) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable(enabled = member.profileUrl != null) {
-                member.profileUrl?.let { onOpenUri(it) }
-            },
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        shape = RoundedCornerShape(20.dp),
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            AsyncImage(
-                model = member.avatarUrl,
-                contentDescription = member.name,
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
-            )
+            item {
+                SectionTitle("Developer")
+                Spacer(Modifier.height(16.dp))
 
-            Spacer(Modifier.width(12.dp))
+                Box(
+                    modifier = Modifier
+                        .size(160.dp)
+                        .clip(RoundedCornerShape(28.dp))
+                        .background(colorScheme.surfaceContainerHighest)
+                        .scale(logoScale),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.susil_avatar),
+                        contentDescription = "Susil Kumar",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
 
-            Column(
-                modifier = Modifier.weight(1f),
-            ) {
+                Spacer(Modifier.height(16.dp))
+
                 Text(
-                    text = member.name,
-                    style = MaterialTheme.typography.titleMedium,
+                    text = "Susil Kumar",
+                    style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = colorScheme.onSurface,
                 )
 
-                Spacer(Modifier.height(2.dp))
+                Spacer(Modifier.height(16.dp))
 
-                Text(
-                    text = member.position,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.secondary,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                AboutCard {
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        SegmentedButton(
+                            label = "Instagram",
+                            iconRes = R.drawable.instagram,
+                            onClick = {
+                                uriHandler.openUri("https://www.instagram.com/imsusil25.exe")
+                            },
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .width(1.dp)
+                                .height(72.dp)
+                                .background(colorScheme.outlineVariant.copy(alpha = 0.5f)),
+                        )
+
+                        SegmentedButton(
+                            label = "Telegram",
+                            iconRes = R.drawable.telegram,
+                            onClick = { uriHandler.openUri("https://t.me/mikey3op") },
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(24.dp))
             }
 
-            Spacer(Modifier.width(8.dp))
+            item {
+                SectionTitle("Support Development")
+                Spacer(Modifier.height(8.dp))
 
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                member.github?.let { url ->
-                    OutlinedIconChipMembers(
-                        iconRes = R.drawable.github,
-                        contentDescription = "GitHub",
-                        onClick = { onOpenUri(url) },
-                    )
+                AboutCard(
+                    onClick = {
+                        uriHandler.openUri(
+                            "https://intradeus.github.io/http-protocol-redirector/?r=upi://pay?pa=iamsusil@fam&pn=Susil%20Kumar&am=&tn=Thank%20You%20so%20much%20for%20this%20support",
+                        )
+                    },
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 20.dp),
+                    ) {
+                        Image(
+                            painter = painterResource(R.drawable.upi),
+                            contentDescription = "UPI",
+                            modifier = Modifier
+                                .width(80.dp)
+                                .height(36.dp),
+                        )
+
+                        Spacer(Modifier.weight(1f))
+
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(
+                                text = "Tap to Support",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = colorScheme.onSurface,
+                            )
+
+                            Spacer(Modifier.height(2.dp))
+
+                            Text(
+                                text = "via UPI (India)",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
                 }
 
-                member.website?.takeIf { it.isNotBlank() }?.let { url ->
-                    OutlinedIconChipMembers(
-                        iconRes = R.drawable.website,
-                        contentDescription = "Website",
-                        onClick = { onOpenUri(url) },
-                    )
-                }
+                Spacer(Modifier.height(28.dp))
 
-                member.discord?.let { url ->
-                    OutlinedIconChipMembers(
-                        iconRes = R.drawable.alternate_email,
-                        contentDescription = "Discord",
-                        onClick = { onOpenUri(url) },
-                    )
-                }
+                HorizontalDivider(
+                    modifier = Modifier.padding(horizontal = 32.dp),
+                    thickness = 1.dp,
+                    color = colorScheme.onSurface.copy(alpha = 0.08f),
+                )
+
+                Spacer(Modifier.height(28.dp))
+            }
+
+            item {
+                Text(
+                    text = "♥ Made with love for music lovers",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colorScheme.onSurface.copy(alpha = 0.4f),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                )
+
+                Spacer(Modifier.height(24.dp))
             }
         }
     }

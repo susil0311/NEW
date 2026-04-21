@@ -1,30 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Sonara — wave-bar icon, large variant (1063×1063dp)
+  Used by: About screen app bar header
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="1063dp"
     android:height="1063dp"
     android:viewportWidth="1063"
     android:viewportHeight="1063">
 
+    <!-- Bar 1 (leftmost, short) -->
     <path
-        android:fillColor="#fefefe"
+        android:fillColor="#FEFEFE"
         android:fillAlpha="0.984"
-        android:strokeAlpha="0.984"
-        android:strokeWidth="1"
-        android:pathData="M 886.5,195.5 C 889.247,195.187 891.914,195.52 894.5,196.5C 907.833,218.833
-921.167,241.167 934.5,263.5C 866.801,378.703 799.301,494.037 732,609.5C
-731.255,610.99 730.088,611.99 728.5,612.5C 693.043,593.27 657.71,573.77
-622.5,554C 619.381,552.458 616.714,550.458 614.5,548C 651.414,478.092
-688.748,408.425 726.5,339C 546.151,347.334 365.817,356.167 185.5,365.5C
-183.534,318.025 182.201,270.691 181.5,223.5C 416.649,214.033 651.649,204.7
-886.5,195.5 Z" />
+        android:pathData="M 313,560 Q 313,541 332,541 L 378,541 Q 397,541 397,560 L 397,660 Q 397,679 378,679 L 332,679 Q 313,679 313,660 Z" />
+
+    <!-- Bar 2 -->
     <path
-        android:fillColor="#fefefe"
+        android:fillColor="#FEFEFE"
         android:fillAlpha="0.983"
-        android:strokeAlpha="0.983"
-        android:strokeWidth="1"
-        android:pathData="M 430.5,423.5 C 479.813,427.356 529.147,431.022 578.5,434.5C 568.926,525.351
-555.759,615.684 539,705.5C 522.729,781.585 502.563,856.585 478.5,930.5C
-438.74,922.915 399.074,914.748 359.5,906C 349.612,904.06 339.945,901.56
-330.5,898.5C 368.461,789.534 395.294,677.867 411,563.5C 418.202,516.921
-424.702,470.254 430.5,423.5 Z" />
+        android:pathData="M 415,487 Q 415,468 434,468 L 480,468 Q 499,468 499,487 L 499,733 Q 499,752 480,752 L 434,752 Q 415,752 415,733 Z" />
+
+    <!-- Bar 3 (tallest, centre) -->
+    <path
+        android:fillColor="#FEFEFE"
+        android:fillAlpha="0.984"
+        android:pathData="M 517,400 Q 517,381 536,381 L 582,381 Q 601,381 601,400 L 601,820 Q 601,839 582,839 L 536,839 Q 517,839 517,820 Z" />
+
+    <!-- Bar 4 -->
+    <path
+        android:fillColor="#FEFEFE"
+        android:fillAlpha="0.983"
+        android:pathData="M 619,487 Q 619,468 638,468 L 684,468 Q 703,468 703,487 L 703,733 Q 703,752 684,752 L 638,752 Q 619,752 619,733 Z" />
+
+    <!-- Bar 5 (rightmost, short) -->
+    <path
+        android:fillColor="#FEFEFE"
+        android:fillAlpha="0.984"
+        android:pathData="M 721,560 Q 721,541 740,541 L 786,541 Q 805,541 805,560 L 805,660 Q 805,679 786,679 L 740,679 Q 721,679 721,660 Z" />
+
 </vector>

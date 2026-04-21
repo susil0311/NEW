@@ -1,27 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Sonara — wave-bar icon (foreground, white bars on transparent)
+  Used by: about_splash_bitmap.xml, app_icon_foreground.xml, splash screen
+  Viewport: 185×185dp  (matches original)
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="185dp"
     android:height="185dp"
     android:viewportWidth="185"
     android:viewportHeight="185">
 
+    <!-- Bar 1 (leftmost, short) -->
     <path
-        android:fillColor="#fefffe"
+        android:fillColor="#FEFFFE"
         android:fillAlpha="0.92"
-        android:strokeAlpha="0.92"
-        android:strokeWidth="1"
-        android:pathData="M 136.5,42.5 C 139.572,42.1826 142.572,42.5159 145.5,43.5C 147.696,46.5596
-149.363,49.893 150.5,53.5C 141.188,70.7896 131.355,87.7896 121,104.5C
-115.248,101.04 109.415,97.7069 103.5,94.5C 108.706,84.5868 114.04,74.7535
-119.5,65C 93.5133,65.9659 67.5133,67.1326 41.5,68.5C 41.5,61.1667 41.5,53.8333
-41.5,46.5C 73.3416,45.5964 105.008,44.2631 136.5,42.5 Z" />
+        android:pathData="M 60,96 Q 60,93 63,93 L 69,93 Q 72,93 72,96 L 72,114 Q 72,117 69,117 L 63,117 Q 60,117 60,114 Z" />
+
+    <!-- Bar 2 -->
     <path
-        android:fillColor="#fefffe"
-        android:fillAlpha="0.914"
-        android:strokeAlpha="0.914"
-        android:strokeWidth="1"
-        android:pathData="M 77.5,75.5 C 84.8406,76.1159 92.174,76.7826 99.5,77.5C 97.8365,97.8139
-94.3365,117.814 89,137.5C 87.8225,142.225 85.9892,146.559 83.5,150.5C
-76.3087,148.954 69.3087,146.954 62.5,144.5C 69.9692,122.011 74.9692,99.011
-77.5,75.5 Z" />
+        android:fillColor="#FEFFFE"
+        android:fillAlpha="0.92"
+        android:pathData="M 77,86 Q 77,83 80,83 L 86,83 Q 89,83 89,86 L 89,124 Q 89,127 86,127 L 80,127 Q 77,127 77,124 Z" />
+
+    <!-- Bar 3 (tallest, centre) -->
+    <path
+        android:fillColor="#FEFFFE"
+        android:fillAlpha="0.92"
+        android:pathData="M 94,74 Q 94,71 97,71 L 103,71 Q 106,71 106,74 L 106,136 Q 106,139 103,139 L 97,139 Q 94,139 94,136 Z" />
+
+    <!-- Bar 4 -->
+    <path
+        android:fillColor="#FEFFFE"
+        android:fillAlpha="0.92"
+        android:pathData="M 111,86 Q 111,83 114,83 L 120,83 Q 123,83 123,86 L 123,124 Q 123,127 120,127 L 114,127 Q 111,127 111,124 Z" />
+
+    <!-- Bar 5 (rightmost, short) -->
+    <path
+        android:fillColor="#FEFFFE"
+        android:fillAlpha="0.92"
+        android:pathData="M 128,96 Q 128,93 131,93 L 137,93 Q 140,93 140,96 L 140,114 Q 140,117 137,117 L 131,117 Q 128,117 128,114 Z" />
+
 </vector>
