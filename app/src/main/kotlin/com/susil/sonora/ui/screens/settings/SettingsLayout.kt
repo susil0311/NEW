@@ -45,8 +45,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.window.core.layout.WindowSizeClass
-import moe.koiverse.archivetune.LocalAnimationsDisabled
-import moe.koiverse.archivetune.LocalPlayerAwareWindowInsets
+import com.susil.sonora.LocalAnimationsDisabled
+import com.susil.sonora.LocalPlayerAwareWindowInsets
 
 enum class SettingsLayoutMode {
     COMPACT,

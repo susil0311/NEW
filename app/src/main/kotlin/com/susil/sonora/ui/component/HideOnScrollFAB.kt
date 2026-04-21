@@ -33,9 +33,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import moe.koiverse.archivetune.LocalAnimationsDisabled
-import moe.koiverse.archivetune.LocalPlayerAwareWindowInsets
-import moe.koiverse.archivetune.ui.utils.isScrollingUp
+import com.susil.sonora.LocalAnimationsDisabled
+import com.susil.sonora.LocalPlayerAwareWindowInsets
+import com.susil.sonora.ui.utils.isScrollingUp
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable

@@ -92,37 +92,37 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
-import moe.koiverse.archivetune.LocalAnimationsDisabled
-import moe.koiverse.archivetune.LocalPlayerAwareWindowInsets
-import moe.koiverse.archivetune.LocalPlayerConnection
-import moe.koiverse.archivetune.R
-import moe.koiverse.archivetune.constants.HistorySource
-import moe.koiverse.archivetune.constants.InnerTubeCookieKey
-import moe.koiverse.archivetune.db.entities.EventWithSong
-import moe.koiverse.archivetune.extensions.metadata
-import moe.koiverse.archivetune.extensions.toMediaItem
-import moe.koiverse.archivetune.extensions.togglePlayPause
-import moe.koiverse.archivetune.innertube.pages.HistoryPage
-import moe.koiverse.archivetune.innertube.utils.parseCookieString
-import moe.koiverse.archivetune.models.toMediaMetadata
-import moe.koiverse.archivetune.playback.queues.ListQueue
-import moe.koiverse.archivetune.playback.queues.YouTubeQueue
-import moe.koiverse.archivetune.ui.component.HideOnScrollFAB
-import moe.koiverse.archivetune.ui.component.LocalMenuState
-import moe.koiverse.archivetune.ui.component.NavigationTitle
-import moe.koiverse.archivetune.ui.component.SongListItem
-import moe.koiverse.archivetune.ui.component.TopSearch
-import moe.koiverse.archivetune.ui.component.YouTubeListItem
-import moe.koiverse.archivetune.ui.component.IconButton as AppIconButton
-import moe.koiverse.archivetune.ui.menu.SelectionMediaMetadataMenu
-import moe.koiverse.archivetune.ui.menu.SongMenu
-import moe.koiverse.archivetune.ui.menu.YouTubeSongMenu
-import moe.koiverse.archivetune.ui.utils.appBarScrollBehavior
-import moe.koiverse.archivetune.ui.utils.backToMain
-import moe.koiverse.archivetune.utils.rememberPreference
-import moe.koiverse.archivetune.viewmodels.DateAgo
-import moe.koiverse.archivetune.viewmodels.HistoryViewModel
-import moe.koiverse.archivetune.viewmodels.RemoteHistoryUiState
+import com.susil.sonora.LocalAnimationsDisabled
+import com.susil.sonora.LocalPlayerAwareWindowInsets
+import com.susil.sonora.LocalPlayerConnection
+import com.susil.sonora.R
+import com.susil.sonora.constants.HistorySource
+import com.susil.sonora.constants.InnerTubeCookieKey
+import com.susil.sonora.db.entities.EventWithSong
+import com.susil.sonora.extensions.metadata
+import com.susil.sonora.extensions.toMediaItem
+import com.susil.sonora.extensions.togglePlayPause
+import com.susil.sonora.innertube.pages.HistoryPage
+import com.susil.sonora.innertube.utils.parseCookieString
+import com.susil.sonora.models.toMediaMetadata
+import com.susil.sonora.playback.queues.ListQueue
+import com.susil.sonora.playback.queues.YouTubeQueue
+import com.susil.sonora.ui.component.HideOnScrollFAB
+import com.susil.sonora.ui.component.LocalMenuState
+import com.susil.sonora.ui.component.NavigationTitle
+import com.susil.sonora.ui.component.SongListItem
+import com.susil.sonora.ui.component.TopSearch
+import com.susil.sonora.ui.component.YouTubeListItem
+import com.susil.sonora.ui.component.IconButton as AppIconButton
+import com.susil.sonora.ui.menu.SelectionMediaMetadataMenu
+import com.susil.sonora.ui.menu.SongMenu
+import com.susil.sonora.ui.menu.YouTubeSongMenu
+import com.susil.sonora.ui.utils.appBarScrollBehavior
+import com.susil.sonora.ui.utils.backToMain
+import com.susil.sonora.utils.rememberPreference
+import com.susil.sonora.viewmodels.DateAgo
+import com.susil.sonora.viewmodels.HistoryViewModel
+import com.susil.sonora.viewmodels.RemoteHistoryUiState
 import java.time.format.DateTimeFormatter
 
 @Composable
@@ -718,8 +718,8 @@ private fun RemoteHistoryFeed(
     activeMediaId: String?,
     navController: NavController,
     onRetry: () -> Unit,
-    onSongMenu: (moe.koiverse.archivetune.innertube.models.SongItem) -> Unit,
-    onSongClick: (moe.koiverse.archivetune.innertube.models.SongItem) -> Unit,
+    onSongMenu: (com.susil.sonora.innertube.models.SongItem) -> Unit,
+    onSongClick: (com.susil.sonora.innertube.models.SongItem) -> Unit,
 ) {
     LazyColumn(
         state = listState,
