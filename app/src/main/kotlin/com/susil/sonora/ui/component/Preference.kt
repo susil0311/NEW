@@ -10,9 +10,6 @@
 @file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 
 
-@file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
-
-
 package com.susil.sonora.ui.component
 
 import androidx.compose.animation.AnimatedContent
