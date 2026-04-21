@@ -598,160 +598,616 @@ func (s *Server) handleLandingPage(w http.ResponseWriter, r *http.Request) {
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Sonora Server</title>
+  <title>Sonora — Self-Hosted Server</title>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
     :root {
-      --bg: #0b1020;
-      --bg2: #121a33;
-      --card: rgba(255,255,255,0.08);
-      --text: #e8eeff;
-      --muted: #b6c2eb;
-      --accent: #7c9bff;
-      --accent2: #68e0ff;
-      --border: rgba(255,255,255,0.14);
+      --bg:      #080d1a;
+      --bg2:     #0d1428;
+      --surface: rgba(255,255,255,0.055);
+      --surface2: rgba(255,255,255,0.03);
+      --text:    #e4ecff;
+      --muted:   #8899cc;
+      --accent:  #6b8eff;
+      --accent2: #56d4f5;
+      --green:   #3de88e;
+      --border:  rgba(255,255,255,0.10);
+      --border2: rgba(255,255,255,0.06);
+      --glow:    rgba(107,142,255,0.18);
     }
-    * { box-sizing: border-box; }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
     body {
-      margin: 0;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
       min-height: 100vh;
-      font-family: Inter, Segoe UI, system-ui, -apple-system, sans-serif;
-      color: var(--text);
-      background:
-        radial-gradient(1200px 600px at -10% -20%, #2a3f82 0%, transparent 60%),
-        radial-gradient(900px 500px at 110% 0%, #1e5b7a 0%, transparent 55%),
-        linear-gradient(160deg, var(--bg), var(--bg2));
-      display: grid;
-      place-items: center;
-      padding: 28px;
+      overflow-x: hidden;
     }
-    .wrap {
-      width: min(980px, 100%);
-      background: linear-gradient(180deg, rgba(255,255,255,.1), rgba(255,255,255,.04));
-      border: 1px solid var(--border);
-      border-radius: 24px;
+
+    /* ── Animated background ── */
+    .bg-canvas {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
       overflow: hidden;
-      box-shadow: 0 20px 70px rgba(0,0,0,.45);
-      backdrop-filter: blur(8px);
     }
-    .hero {
-      padding: 34px 30px 22px;
-      border-bottom: 1px solid var(--border);
-      background: linear-gradient(120deg, rgba(124,155,255,.16), rgba(104,224,255,.08));
+    .bg-canvas::before {
+      content: '';
+      position: absolute;
+      width: 900px; height: 900px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(107,142,255,0.12) 0%, transparent 70%);
+      top: -300px; left: -200px;
+      animation: drift1 18s ease-in-out infinite alternate;
     }
-    .badge {
-      display: inline-flex;
-      gap: 8px;
-      align-items: center;
-      font-size: 12px;
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      padding: 6px 10px;
-      color: var(--muted);
-      background: rgba(0,0,0,.16);
+    .bg-canvas::after {
+      content: '';
+      position: absolute;
+      width: 700px; height: 700px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(86,212,245,0.10) 0%, transparent 70%);
+      bottom: -200px; right: -100px;
+      animation: drift2 22s ease-in-out infinite alternate;
     }
-    h1 {
-      margin: 14px 0 8px;
-      font-size: clamp(30px, 4vw, 44px);
-      line-height: 1.08;
-      letter-spacing: -.02em;
+    .bg-orb3 {
+      position: absolute;
+      width: 500px; height: 500px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(61,232,142,0.07) 0%, transparent 70%);
+      top: 40%; left: 55%;
+      animation: drift3 28s ease-in-out infinite alternate;
     }
-    .sub {
-      margin: 0;
-      color: var(--muted);
-      max-width: 760px;
-      font-size: 16px;
+    @keyframes drift1 { from { transform: translate(0,0) scale(1); } to { transform: translate(80px,60px) scale(1.15); } }
+    @keyframes drift2 { from { transform: translate(0,0) scale(1); } to { transform: translate(-60px,-80px) scale(1.2); } }
+    @keyframes drift3 { from { transform: translate(0,0) scale(1); } to { transform: translate(-40px,50px) scale(0.9); } }
+
+    /* ── Floating music bars (decorative) ── */
+    .bars {
+      position: absolute;
+      bottom: 60px; right: 60px;
+      display: flex; align-items: flex-end; gap: 5px;
+      opacity: 0.12;
     }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 14px;
-      padding: 22px 22px 0;
+    .bar {
+      width: 6px; border-radius: 3px;
+      background: linear-gradient(to top, var(--accent), var(--accent2));
+      animation: bounce var(--d, 1.2s) ease-in-out infinite alternate;
     }
-    .card {
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 16px;
-      background: var(--card);
+    @keyframes bounce { from { height: 10px; } to { height: var(--h, 40px); } }
+
+    /* ── Layout ── */
+    .page {
+      position: relative; z-index: 1;
+      max-width: 1020px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
     }
-    .card h3 {
-      margin: 0 0 8px;
-      font-size: 16px;
-    }
-    .card p {
-      margin: 0;
-      color: var(--muted);
-      font-size: 14px;
-      line-height: 1.5;
-    }
-    .meta {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 10px;
-      margin: 18px 22px 22px;
-      padding: 16px;
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      background: rgba(0,0,0,.18);
-    }
-    .meta strong { color: #fff; }
-    .links {
+
+    /* ── Nav bar ── */
+    nav {
       display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-top: 8px;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 72px;
+      animation: fadeDown 0.6s ease both;
     }
-    .btn {
+    .nav-logo {
+      display: flex; align-items: center; gap: 10px;
+      font-weight: 700; font-size: 18px; letter-spacing: -.02em;
+    }
+    .nav-logo .dot {
+      width: 28px; height: 28px; border-radius: 8px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: grid; place-items: center;
+      box-shadow: 0 0 18px rgba(107,142,255,0.5);
+      animation: pulse 3s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100% { box-shadow: 0 0 18px rgba(107,142,255,0.5); } 50% { box-shadow: 0 0 32px rgba(107,142,255,0.85); } }
+    .nav-pill {
+      font-size: 12px; font-weight: 500;
+      padding: 5px 12px; border-radius: 999px;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      background: var(--surface2);
+    }
+    .status-dot {
+      display: inline-block;
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--green);
+      margin-right: 6px;
+      box-shadow: 0 0 8px var(--green);
+      animation: blink 2s ease-in-out infinite;
+    }
+    @keyframes blink { 0%,100% { opacity:1; } 50% { opacity:.4; } }
+
+    /* ── Hero ── */
+    .hero {
+      margin-bottom: 64px;
+      animation: fadeUp 0.7s 0.1s ease both;
+    }
+    .eyebrow {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 12px; font-weight: 600; letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 20px;
+    }
+    .eyebrow-line {
+      width: 24px; height: 1px; background: var(--accent); opacity: .6;
+    }
+    .hero h1 {
+      font-size: clamp(36px, 5.5vw, 64px);
+      font-weight: 800;
+      line-height: 1.06;
+      letter-spacing: -.03em;
+      margin-bottom: 20px;
+    }
+    .hero h1 .grad {
+      background: linear-gradient(100deg, var(--accent) 0%, var(--accent2) 55%, var(--green) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero p {
+      font-size: 17px;
+      line-height: 1.65;
+      color: var(--muted);
+      max-width: 620px;
+      margin-bottom: 32px;
+    }
+    .hero-btns {
+      display: flex; flex-wrap: wrap; gap: 12px;
+    }
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 8px;
       text-decoration: none;
+      font-size: 14px; font-weight: 600;
+      padding: 12px 22px; border-radius: 12px;
+      background: linear-gradient(135deg, var(--accent), #8ba8ff);
+      color: #fff;
+      box-shadow: 0 4px 24px rgba(107,142,255,0.35);
+      transition: transform .2s, box-shadow .2s;
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(107,142,255,0.5); }
+    .btn-ghost {
+      display: inline-flex; align-items: center; gap: 8px;
+      text-decoration: none;
+      font-size: 14px; font-weight: 500;
+      padding: 12px 22px; border-radius: 12px;
       border: 1px solid var(--border);
       color: var(--text);
-      padding: 8px 12px;
-      border-radius: 10px;
-      font-size: 13px;
-      background: rgba(255,255,255,.04);
+      background: var(--surface2);
+      transition: border-color .2s, background .2s;
     }
-    .btn:hover { border-color: rgba(255,255,255,.3); }
+    .btn-ghost:hover { border-color: rgba(255,255,255,.25); background: var(--surface); }
+
+    /* ── Section label ── */
+    .section-label {
+      font-size: 11px; font-weight: 700; letter-spacing: .14em;
+      text-transform: uppercase; color: var(--muted);
+      margin-bottom: 20px;
+    }
+
+    /* ── Feature grid ── */
+    .features {
+      margin-bottom: 56px;
+      animation: fadeUp 0.7s 0.2s ease both;
+    }
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 14px;
+    }
+    .feature-card {
+      border: 1px solid var(--border2);
+      border-radius: 18px;
+      padding: 22px 20px;
+      background: var(--surface);
+      backdrop-filter: blur(10px);
+      transition: border-color .25s, transform .25s, box-shadow .25s;
+      cursor: default;
+    }
+    .feature-card:hover {
+      border-color: rgba(107,142,255,.35);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px rgba(107,142,255,.15);
+    }
+    .feature-icon {
+      width: 42px; height: 42px; border-radius: 12px;
+      display: grid; place-items: center;
+      font-size: 20px;
+      margin-bottom: 14px;
+      background: linear-gradient(135deg, rgba(107,142,255,.2), rgba(86,212,245,.1));
+      border: 1px solid rgba(107,142,255,.2);
+    }
+    .feature-card h3 {
+      font-size: 15px; font-weight: 700;
+      margin-bottom: 8px; color: var(--text);
+    }
+    .feature-card p {
+      font-size: 13px; line-height: 1.6;
+      color: var(--muted);
+    }
+
+    /* ── API endpoints ── */
+    .endpoints {
+      margin-bottom: 56px;
+      animation: fadeUp 0.7s 0.3s ease both;
+    }
+    .endpoint-list {
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .endpoint {
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px 18px; border-radius: 14px;
+      border: 1px solid var(--border2);
+      background: var(--surface2);
+      transition: border-color .2s, background .2s;
+      text-decoration: none; color: inherit;
+    }
+    .endpoint:hover { border-color: var(--border); background: var(--surface); }
+    .method {
+      font-size: 11px; font-weight: 700; letter-spacing: .06em;
+      padding: 3px 8px; border-radius: 6px; min-width: 44px;
+      text-align: center;
+    }
+    .get  { background: rgba(61,232,142,.15);  color: var(--green); }
+    .post { background: rgba(107,142,255,.15); color: var(--accent); }
+    .ws   { background: rgba(86,212,245,.15);  color: var(--accent2); }
+    .endpoint-path {
+      font-size: 13px; font-family: 'SF Mono', 'Fira Code', monospace;
+      color: var(--text); font-weight: 500;
+      flex: 1;
+    }
+    .endpoint-desc {
+      font-size: 12px; color: var(--muted);
+    }
+
+    /* ── About / meta ── */
+    .about {
+      animation: fadeUp 0.7s 0.4s ease both;
+    }
+    .about-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    @media (max-width: 640px) { .about-grid { grid-template-columns: 1fr; } }
+
+    .about-card {
+      border: 1px solid var(--border2);
+      border-radius: 18px;
+      padding: 24px;
+      background: var(--surface);
+      backdrop-filter: blur(10px);
+    }
+    .about-card.full { grid-column: 1 / -1; }
+    .about-card h3 {
+      font-size: 14px; font-weight: 700;
+      color: var(--muted); letter-spacing: .05em;
+      text-transform: uppercase; margin-bottom: 16px;
+    }
+
+    .meta-row {
+      display: flex; justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border2);
+      font-size: 14px;
+    }
+    .meta-row:last-child { border-bottom: none; }
+    .meta-row .label { color: var(--muted); }
+    .meta-row .value { font-weight: 500; color: var(--text); text-align: right; }
+    .meta-row .value code {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 12px;
+      background: rgba(255,255,255,.07);
+      padding: 2px 7px; border-radius: 5px;
+    }
+
+    /* ── Sonora app features ── */
+    .app-features {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 10px;
+    }
+    .app-feat {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 13px; color: var(--muted);
+      padding: 8px 12px; border-radius: 10px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid var(--border2);
+    }
+    .app-feat .ic { font-size: 15px; }
+
+    /* ── UPI support ── */
+    .upi-card {
+      background: linear-gradient(135deg, rgba(61,232,142,.08), rgba(107,142,255,.08));
+      border: 1px solid rgba(61,232,142,.2);
+      border-radius: 18px;
+      padding: 24px;
+      grid-column: 1 / -1;
+    }
+    .upi-card h3 {
+      color: var(--green) !important;
+    }
+    .upi-box {
+      display: flex; align-items: center; gap: 12px;
+      background: rgba(0,0,0,.25);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 18px;
+      margin-bottom: 12px;
+    }
+    .upi-id {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 16px; font-weight: 600;
+      color: var(--green);
+      flex: 1;
+      letter-spacing: .04em;
+    }
+    .copy-btn {
+      font-size: 12px; font-weight: 600;
+      padding: 6px 14px; border-radius: 8px;
+      border: 1px solid rgba(61,232,142,.3);
+      background: rgba(61,232,142,.12);
+      color: var(--green);
+      cursor: pointer; transition: background .2s;
+      outline: none;
+    }
+    .copy-btn:hover { background: rgba(61,232,142,.22); }
+    .upi-note {
+      font-size: 13px; color: var(--muted); line-height: 1.5;
+    }
+
+    /* ── Footer ── */
+    footer {
+      margin-top: 72px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border2);
+      display: flex; flex-wrap: wrap;
+      justify-content: space-between; align-items: center;
+      gap: 12px;
+      font-size: 13px; color: var(--muted);
+      animation: fadeUp 0.7s 0.5s ease both;
+    }
+    footer a { color: var(--muted); text-decoration: none; }
+    footer a:hover { color: var(--text); }
+    .footer-links { display: flex; gap: 20px; flex-wrap: wrap; }
+
+    /* ── Animations ── */
+    @keyframes fadeUp   { from { opacity:0; transform:translateY(22px); } to { opacity:1; transform:none; } }
+    @keyframes fadeDown { from { opacity:0; transform:translateY(-14px); } to { opacity:1; transform:none; } }
   </style>
 </head>
 <body>
-  <main class="wrap">
-    <section class="hero">
-      <span class="badge">Sonora • Online API</span>
-      <h1>Sonora Listen Together Server</h1>
-      <p class="sub">
-        Self-hosted backend for online rooms, token issuance, and Canvas proxy integration.
-        Built for real-time synchronized listening with a modern and privacy-focused architecture.
-      </p>
-    </section>
 
-    <section class="grid">
-      <article class="card">
-        <h3>Listen Together</h3>
-        <p>Create sessions, resolve join codes, and sync playback in real time over WebSocket.</p>
-      </article>
-      <article class="card">
-        <h3>Runtime Tokens</h3>
-        <p>Short-lived JWT tokens secure Together and Canvas endpoints without shipping static secrets.</p>
-      </article>
-      <article class="card">
-        <h3>Canvas Proxy</h3>
-        <p>Server-side Canvas integration keeps upstream credentials off the Android client.</p>
-      </article>
-      <article class="card">
-        <h3>Health & Deploy</h3>
-        <p>Production-friendly endpoints with lightweight deployment on free-tier cloud platforms.</p>
-      </article>
-    </section>
+<div class="bg-canvas">
+  <div class="bg-orb3"></div>
+  <div class="bars">
+    <div class="bar" style="--h:24px;--d:1.1s"></div>
+    <div class="bar" style="--h:42px;--d:0.8s"></div>
+    <div class="bar" style="--h:34px;--d:1.4s"></div>
+    <div class="bar" style="--h:52px;--d:0.9s"></div>
+    <div class="bar" style="--h:28px;--d:1.2s"></div>
+    <div class="bar" style="--h:46px;--d:1.6s"></div>
+    <div class="bar" style="--h:20px;--d:1.0s"></div>
+  </div>
+</div>
 
-    <section class="meta">
-      <div><strong>Developer:</strong> Susil Kumar</div>
-      <div><strong>Project:</strong> Sonora</div>
-      <div><strong>Status API:</strong> <code>/health</code></div>
-      <div class="links">
-        <a class="btn" href="/health">Health Check</a>
-        <a class="btn" href="/v1/auth/token">Token Endpoint (POST)</a>
+<div class="page">
+
+  <!-- Nav -->
+  <nav>
+    <div class="nav-logo">
+      <div class="dot">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+          <path d="M9 18V5l12-2v13" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="6" cy="18" r="3" stroke="#fff" stroke-width="2.2"/>
+          <circle cx="18" cy="16" r="3" stroke="#fff" stroke-width="2.2"/>
+        </svg>
       </div>
-    </section>
-  </main>
+      Sonora
+    </div>
+    <span class="nav-pill"><span class="status-dot"></span>Server Online</span>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="eyebrow"><div class="eyebrow-line"></div>Self-Hosted Backend</div>
+    <h1>Sync Music.<br><span class="grad">Together.</span></h1>
+    <p>
+      Sonora's self-hosted server powers real-time listening sessions, secure token issuance,
+      and Canvas artwork proxy — all in a single Go binary you can deploy anywhere in seconds.
+    </p>
+    <div class="hero-btns">
+      <a class="btn-primary" href="/health">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        Health Check
+      </a>
+      <a class="btn-ghost" href="/v1/auth/token">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        Token Endpoint
+      </a>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section class="features">
+    <p class="section-label">What this server does</p>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🎵</div>
+        <h3>Listen Together</h3>
+        <p>Create live sessions with WebSocket sync. Join codes, host approval, guest controls, kick &amp; ban.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔐</div>
+        <h3>Runtime Tokens</h3>
+        <p>Short-lived JWTs issued on demand. No static secrets shipped to the Android client.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🖼️</div>
+        <h3>Canvas Proxy</h3>
+        <p>Proxies album artwork and animated canvas from upstream — keeping credentials server-side.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⚡</div>
+        <h3>Zero-dependency deploy</h3>
+        <p>Single static binary. Works on Fly.io, Railway, Render, VPS — or your own machine.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🛡️</div>
+        <h3>Privacy First</h3>
+        <p>No analytics, no tracking. Your listening data stays between you and your guests.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🌐</div>
+        <h3>CORS Ready</h3>
+        <p>Full CORS support with structured JSON errors for easy integration from any client.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- API Endpoints -->
+  <section class="endpoints">
+    <p class="section-label">API endpoints</p>
+    <div class="endpoint-list">
+      <a class="endpoint" href="/health">
+        <span class="method get">GET</span>
+        <span class="endpoint-path">/health</span>
+        <span class="endpoint-desc">Server health check</span>
+      </a>
+      <div class="endpoint">
+        <span class="method post">POST</span>
+        <span class="endpoint-path">/v1/auth/token</span>
+        <span class="endpoint-desc">Issue scoped JWT token</span>
+      </div>
+      <div class="endpoint">
+        <span class="method post">POST</span>
+        <span class="endpoint-path">/v1/together/sessions</span>
+        <span class="endpoint-desc">Create listening session • <code>together:rw</code></span>
+      </div>
+      <div class="endpoint">
+        <span class="method post">POST</span>
+        <span class="endpoint-path">/v1/together/sessions/resolve</span>
+        <span class="endpoint-desc">Resolve join code → session • <code>together:rw</code></span>
+      </div>
+      <div class="endpoint">
+        <span class="method ws">WS</span>
+        <span class="endpoint-path">/v1/together/ws</span>
+        <span class="endpoint-desc">Real-time sync WebSocket • <code>together:rw</code></span>
+      </div>
+      <div class="endpoint">
+        <span class="method get">GET</span>
+        <span class="endpoint-path">/v1/canvas</span>
+        <span class="endpoint-desc">Canvas artwork proxy • <code>canvas:read</code></span>
+      </div>
+      <div class="endpoint">
+        <span class="method get">GET</span>
+        <span class="endpoint-path">/v1/canvas/health</span>
+        <span class="endpoint-desc">Canvas upstream health • <code>canvas:read</code></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- About -->
+  <section class="about">
+    <p class="section-label">About Sonora</p>
+    <div class="about-grid">
+
+      <!-- Project info -->
+      <div class="about-card">
+        <h3>Project Details</h3>
+        <div class="meta-row"><span class="label">Developer</span><span class="value">Susil Kumar</span></div>
+        <div class="meta-row"><span class="label">App</span><span class="value">Sonora Music</span></div>
+        <div class="meta-row"><span class="label">Platform</span><span class="value">Android</span></div>
+        <div class="meta-row"><span class="label">Health endpoint</span><span class="value"><code>/health</code></span></div>
+        <div class="meta-row"><span class="label">Token endpoint</span><span class="value"><code>POST /v1/auth/token</code></span></div>
+      </div>
+
+      <!-- App features -->
+      <div class="about-card">
+        <h3>Sonora App Features</h3>
+        <div class="app-features">
+          <div class="app-feat"><span class="ic">🎶</span>YouTube Music</div>
+          <div class="app-feat"><span class="ic">👥</span>Listen Together</div>
+          <div class="app-feat"><span class="ic">🎨</span>Canvas Art</div>
+          <div class="app-feat"><span class="ic">📝</span>Lyrics</div>
+          <div class="app-feat"><span class="ic">📻</span>Radio</div>
+          <div class="app-feat"><span class="ic">🎛️</span>Equalizer</div>
+          <div class="app-feat"><span class="ic">⬇️</span>Offline Cache</div>
+          <div class="app-feat"><span class="ic">🔀</span>Smart Queue</div>
+          <div class="app-feat"><span class="ic">🌙</span>Sleep Timer</div>
+          <div class="app-feat"><span class="ic">🏠</span>Local Media</div>
+          <div class="app-feat"><span class="ic">🎤</span>Last.fm Scrobble</div>
+          <div class="app-feat"><span class="ic">🎮</span>Discord RPC</div>
+        </div>
+      </div>
+
+      <!-- UPI Support -->
+      <div class="about-card upi-card">
+        <h3>☕ Support Development</h3>
+        <p class="upi-note" style="margin-bottom:16px">
+          Sonora is built with ❤️ as a free, open-source project. If it brings you joy,
+          consider buying the developer a coffee — every contribution keeps the project alive!
+        </p>
+        <div class="upi-box">
+          <span class="upi-id" id="upiId">iamsusil@fam</span>
+          <button class="copy-btn" onclick="copyUPI()">Copy</button>
+        </div>
+        <p class="upi-note">
+          Open any UPI app (GPay, PhonePe, Paytm, BHIM) → Send money → paste the ID above.
+          No minimum. Thank you for supporting independent development! 🙏
+        </p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <span>© 2026 Sonora · Made with ♥ by Susil Kumar</span>
+    <div class="footer-links">
+      <a href="/health">Health</a>
+      <a href="/v1/auth/token">Token API</a>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+  function copyUPI() {
+    const id = document.getElementById('upiId').textContent;
+    navigator.clipboard.writeText(id).then(() => {
+      const btn = document.querySelector('.copy-btn');
+      const orig = btn.textContent;
+      btn.textContent = 'Copied!';
+      btn.style.background = 'rgba(61,232,142,.35)';
+      setTimeout(() => { btn.textContent = orig; btn.style.background = ''; }, 1800);
+    });
+  }
+
+  // Stagger feature card entrance
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((e, i) => {
+      if (e.isIntersecting) {
+        e.target.style.animation = 'fadeUp 0.5s ' + (i * 0.07) + 's ease both';
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.feature-card, .endpoint, .about-card').forEach(el => {
+    el.style.opacity = '0';
+    observer.observe(el);
+  });
+</script>
 </body>
 </html>`
 
