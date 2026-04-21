@@ -176,15 +176,12 @@ import com.susil.sonora.constants.DynamicThemeKey
 import com.susil.sonora.constants.FloatingToolbarBottomPadding
 import com.susil.sonora.constants.FloatingToolbarHeight
 import com.susil.sonora.constants.FloatingToolbarHorizontalPadding
-import com.susil.sonora.constants.HasPressedStarKey
-import com.susil.sonora.constants.LaunchCountKey
 import com.susil.sonora.constants.MiniPlayerBottomSpacing
 import com.susil.sonora.constants.MiniPlayerHeight
 import com.susil.sonora.constants.MiniPlayerLastAnchorKey
 import com.susil.sonora.constants.NavigationBarAnimationSpec
 import com.susil.sonora.constants.PauseSearchHistoryKey
 import com.susil.sonora.constants.PureBlackKey
-import com.susil.sonora.constants.RemindAfterKey
 import com.susil.sonora.constants.SYSTEM_DEFAULT
 import com.susil.sonora.constants.SearchSource
 import com.susil.sonora.constants.SearchSourceKey
@@ -226,7 +223,6 @@ import com.susil.sonora.ui.component.IconButton
 import com.susil.sonora.ui.component.LocalBottomSheetPageState
 import com.susil.sonora.ui.component.LocalMenuState
 import com.susil.sonora.ui.component.NetworkStatusBanner
-import com.susil.sonora.ui.component.StarDialog
 import com.susil.sonora.ui.component.TvNavigationRail
 import com.mikepenz.markdown.m3.Markdown
 import com.susil.sonora.ui.component.TopSearch
@@ -1065,75 +1061,6 @@ class MainActivity : ComponentActivity() {
                         } else {
                             handleIntent(intent, navController)
                         }
-                    }
-
-                    var showStarDialog by remember { mutableStateOf(false) }
-
-                    LaunchedEffect(Unit) {
-                        kotlinx.coroutines.delay(3000)
-                        
-                        withContext(Dispatchers.IO) {
-                            val current = dataStore[LaunchCountKey] ?: 0
-                            val newCount = current + 1
-                            dataStore.edit { prefs ->
-                                prefs[LaunchCountKey] = newCount
-                            }
-                        }
-
-                        val shouldShow = withContext(Dispatchers.IO) {
-                            val hasPressed = dataStore[HasPressedStarKey] ?: false
-                            val remindAfter = dataStore[RemindAfterKey] ?: 3
-                            !hasPressed && (dataStore[LaunchCountKey] ?: 0) >= remindAfter
-                        }
-
-                        if (shouldShow) {
-                            var waited = 0L
-                            val waitStep = 500L
-                            val maxWait = 30_000L
-                            while (bottomSheetPageState.isVisible && waited < maxWait) {
-                                delay(waitStep)
-                                waited += waitStep
-                            }
-                            showStarDialog = true
-                        }
-                    }
-
-                    if (showStarDialog) {
-                        StarDialog(
-                            onDismissRequest = { showStarDialog = false },
-                            onStar = {
-                                coroutineScope.launch {
-                                    try {
-                                        withContext(Dispatchers.IO) {
-                                            dataStore.edit { prefs ->
-                                                prefs[HasPressedStarKey] = true
-                                                prefs[RemindAfterKey] = Int.MAX_VALUE
-                                            }
-                                        }
-                                    } catch (e: Exception) {
-                                        reportException(e)
-                                    } finally {
-                                        showStarDialog = false
-                                    }
-                                }
-                            },
-                            onLater = {
-                                coroutineScope.launch {
-                                    try {
-                                        val launch = withContext(Dispatchers.IO) { dataStore[LaunchCountKey] ?: 0 }
-                                        withContext(Dispatchers.IO) {
-                                            dataStore.edit { prefs ->
-                                                prefs[RemindAfterKey] = launch + 10
-                                            }
-                                        }
-                                    } catch (e: Exception) {
-                                        reportException(e)
-                                    } finally {
-                                        showStarDialog = false
-                                    }
-                                }
-                            }
-                        )
                     }
 
                     val currentTitleRes = remember(navBackStackEntry) {
