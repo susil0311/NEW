@@ -596,617 +596,874 @@ func (s *Server) handleLandingPage(w http.ResponseWriter, r *http.Request) {
 	html := `<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Sonora — Self-Hosted Server</title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Sonora — Music, Reimagined</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet"/>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-
     :root {
-      --bg:      #080d1a;
-      --bg2:     #0d1428;
-      --surface: rgba(255,255,255,0.055);
-      --surface2: rgba(255,255,255,0.03);
-      --text:    #e4ecff;
-      --muted:   #8899cc;
-      --accent:  #6b8eff;
-      --accent2: #56d4f5;
-      --green:   #3de88e;
-      --border:  rgba(255,255,255,0.10);
-      --border2: rgba(255,255,255,0.06);
-      --glow:    rgba(107,142,255,0.18);
+      --c0: #06060a;
+      --c1: #0b0b12;
+      --c2: #111120;
+      --c3: #1a1a2e;
+      --text: #f0efff;
+      --muted: #7a7a9d;
+      --dim: #3a3a5c;
+      --a1: #7c6fff;
+      --a2: #c76fff;
+      --a3: #6fcfff;
+      --a4: #6fff9e;
+      --r: 0.75rem;
+      --rx: 1.5rem;
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     html { scroll-behavior: smooth; }
 
     body {
-      font-family: 'Inter', system-ui, -apple-system, sans-serif;
-      background: var(--bg);
+      font-family: 'DM Sans', system-ui, sans-serif;
+      background: var(--c0);
       color: var(--text);
-      min-height: 100vh;
       overflow-x: hidden;
+      min-height: 100vh;
     }
 
-    /* ── Animated background ── */
-    .bg-canvas {
-      position: fixed;
-      inset: 0;
-      z-index: 0;
-      pointer-events: none;
+    /* ─── NOISE GRAIN OVERLAY ─── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 1000; pointer-events: none;
+      opacity: 0.032;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+      background-size: 200px 200px;
+    }
+
+    /* ─── ANIMATED BACKGROUND MESH ─── */
+    .mesh {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
       overflow: hidden;
     }
-    .bg-canvas::before {
-      content: '';
+    .mesh-orb {
       position: absolute;
-      width: 900px; height: 900px;
       border-radius: 50%;
-      background: radial-gradient(circle, rgba(107,142,255,0.12) 0%, transparent 70%);
+      filter: blur(120px);
+      opacity: 0.18;
+    }
+    .mesh-orb:nth-child(1) {
+      width: 800px; height: 800px;
+      background: var(--a1);
       top: -300px; left: -200px;
-      animation: drift1 18s ease-in-out infinite alternate;
+      animation: orb1 20s ease-in-out infinite alternate;
     }
-    .bg-canvas::after {
-      content: '';
-      position: absolute;
-      width: 700px; height: 700px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(86,212,245,0.10) 0%, transparent 70%);
-      bottom: -200px; right: -100px;
-      animation: drift2 22s ease-in-out infinite alternate;
+    .mesh-orb:nth-child(2) {
+      width: 600px; height: 600px;
+      background: var(--a2);
+      top: 30%; right: -200px;
+      animation: orb2 25s ease-in-out infinite alternate;
     }
-    .bg-orb3 {
-      position: absolute;
+    .mesh-orb:nth-child(3) {
       width: 500px; height: 500px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(61,232,142,0.07) 0%, transparent 70%);
-      top: 40%; left: 55%;
-      animation: drift3 28s ease-in-out infinite alternate;
+      background: var(--a3);
+      bottom: -100px; left: 30%;
+      animation: orb3 18s ease-in-out infinite alternate;
     }
-    @keyframes drift1 { from { transform: translate(0,0) scale(1); } to { transform: translate(80px,60px) scale(1.15); } }
-    @keyframes drift2 { from { transform: translate(0,0) scale(1); } to { transform: translate(-60px,-80px) scale(1.2); } }
-    @keyframes drift3 { from { transform: translate(0,0) scale(1); } to { transform: translate(-40px,50px) scale(0.9); } }
+    @keyframes orb1 { to { transform: translate(120px, 80px) scale(1.2); } }
+    @keyframes orb2 { to { transform: translate(-80px, 120px) scale(0.85); } }
+    @keyframes orb3 { to { transform: translate(-60px, -80px) scale(1.15); } }
 
-    /* ── Floating music bars (decorative) ── */
-    .bars {
-      position: absolute;
-      bottom: 60px; right: 60px;
-      display: flex; align-items: flex-end; gap: 5px;
-      opacity: 0.12;
-    }
-    .bar {
-      width: 6px; border-radius: 3px;
-      background: linear-gradient(to top, var(--accent), var(--accent2));
-      animation: bounce var(--d, 1.2s) ease-in-out infinite alternate;
-    }
-    @keyframes bounce { from { height: 10px; } to { height: var(--h, 40px); } }
-
-    /* ── Layout ── */
-    .page {
+    /* ─── LAYOUT ─── */
+    .wrap {
       position: relative; z-index: 1;
-      max-width: 1020px;
-      margin: 0 auto;
-      padding: 48px 24px 80px;
+      max-width: 1100px; margin: 0 auto;
+      padding: 0 28px;
     }
 
-    /* ── Nav bar ── */
+    /* ─── NAV ─── */
     nav {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 72px;
-      animation: fadeDown 0.6s ease both;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 28px 0 0;
+      animation: fadeD 0.6s ease both;
     }
-    .nav-logo {
+    .nav-brand {
       display: flex; align-items: center; gap: 10px;
-      font-weight: 700; font-size: 18px; letter-spacing: -.02em;
+      font-family: 'Syne', sans-serif;
+      font-weight: 800; font-size: 1.2rem;
+      letter-spacing: -0.02em;
+      text-decoration: none; color: var(--text);
     }
-    .nav-logo .dot {
-      width: 28px; height: 28px; border-radius: 8px;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
+    .brand-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: linear-gradient(135deg, var(--a1), var(--a2));
       display: grid; place-items: center;
-      box-shadow: 0 0 18px rgba(107,142,255,0.5);
-      animation: pulse 3s ease-in-out infinite;
+      box-shadow: 0 0 24px rgba(124,111,255,0.5);
+      flex-shrink: 0;
     }
-    @keyframes pulse { 0%,100% { box-shadow: 0 0 18px rgba(107,142,255,0.5); } 50% { box-shadow: 0 0 32px rgba(107,142,255,0.85); } }
-    .nav-pill {
-      font-size: 12px; font-weight: 500;
-      padding: 5px 12px; border-radius: 999px;
-      border: 1px solid var(--border);
+    .nav-badge {
+      font-size: 0.72rem; font-weight: 500;
+      letter-spacing: 0.04em;
       color: var(--muted);
-      background: var(--surface2);
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      padding: 5px 14px; border-radius: 99px;
     }
-    .status-dot {
-      display: inline-block;
-      width: 7px; height: 7px; border-radius: 50%;
-      background: var(--green);
-      margin-right: 6px;
-      box-shadow: 0 0 8px var(--green);
-      animation: blink 2s ease-in-out infinite;
-    }
-    @keyframes blink { 0%,100% { opacity:1; } 50% { opacity:.4; } }
 
-    /* ── Hero ── */
+    /* ─── HERO ─── */
     .hero {
-      margin-bottom: 64px;
-      animation: fadeUp 0.7s 0.1s ease both;
+      padding: 100px 0 80px;
+      text-align: center;
     }
-    .eyebrow {
+    .hero-chip {
       display: inline-flex; align-items: center; gap: 8px;
-      font-size: 12px; font-weight: 600; letter-spacing: .12em;
+      font-size: 0.78rem; font-weight: 500; letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: var(--accent);
-      margin-bottom: 20px;
+      color: var(--a1);
+      background: rgba(124,111,255,0.1);
+      border: 1px solid rgba(124,111,255,0.25);
+      padding: 6px 16px; border-radius: 99px;
+      margin-bottom: 32px;
+      animation: fadeU 0.7s 0.1s ease both;
     }
-    .eyebrow-line {
-      width: 24px; height: 1px; background: var(--accent); opacity: .6;
+    .chip-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--a1);
+      box-shadow: 0 0 8px var(--a1);
+      animation: pulse 2s ease-in-out infinite;
     }
+    @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+
     .hero h1 {
-      font-size: clamp(36px, 5.5vw, 64px);
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(3rem, 7vw, 6rem);
       font-weight: 800;
-      line-height: 1.06;
-      letter-spacing: -.03em;
-      margin-bottom: 20px;
+      line-height: 1.0;
+      letter-spacing: -0.04em;
+      margin-bottom: 28px;
+      animation: fadeU 0.7s 0.15s ease both;
     }
-    .hero h1 .grad {
-      background: linear-gradient(100deg, var(--accent) 0%, var(--accent2) 55%, var(--green) 100%);
+    .hero h1 .line2 {
+      display: block;
+      background: linear-gradient(100deg, var(--a1) 0%, var(--a2) 50%, var(--a3) 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
     }
-    .hero p {
-      font-size: 17px;
-      line-height: 1.65;
+    .hero-sub {
+      font-size: 1.15rem; font-weight: 300; line-height: 1.7;
       color: var(--muted);
-      max-width: 620px;
-      margin-bottom: 32px;
+      max-width: 560px; margin: 0 auto 44px;
+      animation: fadeU 0.7s 0.2s ease both;
     }
-    .hero-btns {
-      display: flex; flex-wrap: wrap; gap: 12px;
+    .hero-ctas {
+      display: flex; justify-content: center; flex-wrap: wrap; gap: 14px;
+      animation: fadeU 0.7s 0.25s ease both;
     }
-    .btn-primary {
-      display: inline-flex; align-items: center; gap: 8px;
-      text-decoration: none;
-      font-size: 14px; font-weight: 600;
-      padding: 12px 22px; border-radius: 12px;
-      background: linear-gradient(135deg, var(--accent), #8ba8ff);
-      color: #fff;
-      box-shadow: 0 4px 24px rgba(107,142,255,0.35);
-      transition: transform .2s, box-shadow .2s;
+    .btn-grad {
+      display: inline-flex; align-items: center; gap: 9px;
+      font-size: 0.9rem; font-weight: 600;
+      padding: 14px 28px; border-radius: var(--r);
+      background: linear-gradient(135deg, var(--a1), var(--a2));
+      color: #fff; text-decoration: none;
+      box-shadow: 0 6px 32px rgba(124,111,255,0.4);
+      transition: transform 0.2s, box-shadow 0.2s;
     }
-    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(107,142,255,0.5); }
-    .btn-ghost {
-      display: inline-flex; align-items: center; gap: 8px;
-      text-decoration: none;
-      font-size: 14px; font-weight: 500;
-      padding: 12px 22px; border-radius: 12px;
-      border: 1px solid var(--border);
-      color: var(--text);
-      background: var(--surface2);
-      transition: border-color .2s, background .2s;
+    .btn-grad:hover { transform: translateY(-3px); box-shadow: 0 12px 40px rgba(124,111,255,0.55); }
+    .btn-outline {
+      display: inline-flex; align-items: center; gap: 9px;
+      font-size: 0.9rem; font-weight: 500;
+      padding: 14px 28px; border-radius: var(--r);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: var(--text); text-decoration: none;
+      background: rgba(255,255,255,0.04);
+      transition: border-color 0.2s, background 0.2s;
     }
-    .btn-ghost:hover { border-color: rgba(255,255,255,.25); background: var(--surface); }
+    .btn-outline:hover { border-color: rgba(255,255,255,0.25); background: rgba(255,255,255,0.08); }
 
-    /* ── Section label ── */
-    .section-label {
-      font-size: 11px; font-weight: 700; letter-spacing: .14em;
-      text-transform: uppercase; color: var(--muted);
+    /* ─── MOCKUP PLAYER ─── */
+    .player-wrap {
+      margin: 72px auto 0;
+      max-width: 420px;
+      animation: fadeU 0.8s 0.3s ease both;
+    }
+    .player {
+      background: linear-gradient(160deg, rgba(26,26,46,0.95), rgba(11,11,18,0.98));
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 28px;
+      padding: 28px;
+      box-shadow: 0 40px 120px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04) inset;
+      backdrop-filter: blur(20px);
+      position: relative;
+      overflow: hidden;
+    }
+    .player::before {
+      content:'';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 50% 0%, rgba(124,111,255,0.12) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .player-art {
+      width: 100%; aspect-ratio: 1;
+      border-radius: 20px;
+      background: linear-gradient(135deg, #1e1040, #2a0040, #001840, #001a30);
+      margin-bottom: 20px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+    }
+    .player-art-inner {
+      position: absolute; inset: 0;
+      display: grid; place-items: center;
+    }
+    .vinyl {
+      width: 160px; height: 160px; border-radius: 50%;
+      background: conic-gradient(from 0deg, #1a1040, #0d0020, #001830, #0a0a1a, #1a1040);
+      box-shadow: 0 0 60px rgba(124,111,255,0.3);
+      animation: spin 12s linear infinite;
+      position: relative;
+    }
+    .vinyl::after {
+      content: '';
+      position: absolute; inset: 35%;
+      border-radius: 50%;
+      background: radial-gradient(circle, #252535, #15151f);
+      box-shadow: 0 0 0 6px rgba(124,111,255,0.2);
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .canvas-glow {
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 30% 70%, rgba(199,111,255,0.25), transparent 50%),
+                  radial-gradient(ellipse at 80% 20%, rgba(111,207,255,0.2), transparent 50%);
+    }
+    .player-meta {
       margin-bottom: 20px;
     }
-
-    /* ── Feature grid ── */
-    .features {
-      margin-bottom: 56px;
-      animation: fadeUp 0.7s 0.2s ease both;
+    .player-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.1rem; font-weight: 700;
+      margin-bottom: 4px;
     }
-    .feature-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-      gap: 14px;
+    .player-artist {
+      font-size: 0.85rem; color: var(--muted);
     }
-    .feature-card {
-      border: 1px solid var(--border2);
-      border-radius: 18px;
-      padding: 22px 20px;
-      background: var(--surface);
-      backdrop-filter: blur(10px);
-      transition: border-color .25s, transform .25s, box-shadow .25s;
-      cursor: default;
+    .player-bar {
+      height: 3px; border-radius: 99px;
+      background: rgba(255,255,255,0.1);
+      margin-bottom: 8px; overflow: hidden;
     }
-    .feature-card:hover {
-      border-color: rgba(107,142,255,.35);
-      transform: translateY(-4px);
-      box-shadow: 0 12px 40px rgba(107,142,255,.15);
+    .player-progress {
+      height: 100%; width: 62%;
+      background: linear-gradient(90deg, var(--a1), var(--a2));
+      border-radius: 99px;
     }
-    .feature-icon {
-      width: 42px; height: 42px; border-radius: 12px;
+    .player-times {
+      display: flex; justify-content: space-between;
+      font-size: 0.72rem; color: var(--muted);
+      margin-bottom: 24px;
+    }
+    .player-controls {
+      display: flex; align-items: center; justify-content: center; gap: 28px;
+    }
+    .ctrl-btn {
+      background: none; border: none; cursor: pointer;
+      color: var(--muted); padding: 0;
+      transition: color 0.2s, transform 0.15s;
+    }
+    .ctrl-btn:hover { color: var(--text); transform: scale(1.1); }
+    .ctrl-play {
+      width: 54px; height: 54px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--a1), var(--a2));
+      border: none; cursor: pointer;
       display: grid; place-items: center;
-      font-size: 20px;
-      margin-bottom: 14px;
-      background: linear-gradient(135deg, rgba(107,142,255,.2), rgba(86,212,245,.1));
-      border: 1px solid rgba(107,142,255,.2);
+      box-shadow: 0 6px 24px rgba(124,111,255,0.45);
+      transition: transform 0.2s, box-shadow 0.2s;
+      color: #fff;
     }
-    .feature-card h3 {
-      font-size: 15px; font-weight: 700;
-      margin-bottom: 8px; color: var(--text);
+    .ctrl-play:hover { transform: scale(1.08); box-shadow: 0 10px 32px rgba(124,111,255,0.6); }
+
+    /* Floating tags on player */
+    .player-tag {
+      position: absolute;
+      font-size: 0.7rem; font-weight: 600;
+      padding: 5px 11px; border-radius: 99px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.12);
+      white-space: nowrap;
+      animation: float 4s ease-in-out infinite;
     }
-    .feature-card p {
-      font-size: 13px; line-height: 1.6;
-      color: var(--muted);
+    .ptag-lyrics {
+      top: 28px; right: -24px;
+      background: rgba(124,111,255,0.2);
+      color: var(--a1);
+      animation-delay: 0s;
+    }
+    .ptag-canvas {
+      bottom: 100px; right: -32px;
+      background: rgba(199,111,255,0.2);
+      color: var(--a2);
+      animation-delay: 1.3s;
+    }
+    .ptag-together {
+      bottom: 60px; left: -40px;
+      background: rgba(111,255,158,0.15);
+      color: var(--a4);
+      animation-delay: 0.7s;
+    }
+    @keyframes float {
+      0%,100% { transform: translateY(0px); }
+      50% { transform: translateY(-8px); }
     }
 
-    /* ── API endpoints ── */
-    .endpoints {
-      margin-bottom: 56px;
-      animation: fadeUp 0.7s 0.3s ease both;
+    /* ─── SECTION SHARED ─── */
+    section { padding: 96px 0; }
+    .sec-eyebrow {
+      display: inline-block;
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--a1);
+      margin-bottom: 14px;
     }
-    .endpoint-list {
-      display: flex; flex-direction: column; gap: 8px;
+    .sec-title {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+      font-weight: 800; letter-spacing: -0.03em;
+      line-height: 1.1; margin-bottom: 18px;
     }
-    .endpoint {
-      display: flex; align-items: center; gap: 14px;
-      padding: 14px 18px; border-radius: 14px;
-      border: 1px solid var(--border2);
-      background: var(--surface2);
-      transition: border-color .2s, background .2s;
-      text-decoration: none; color: inherit;
+    .sec-sub {
+      font-size: 1rem; line-height: 1.7; color: var(--muted);
+      max-width: 540px;
     }
-    .endpoint:hover { border-color: var(--border); background: var(--surface); }
-    .method {
-      font-size: 11px; font-weight: 700; letter-spacing: .06em;
-      padding: 3px 8px; border-radius: 6px; min-width: 44px;
+
+    /* ─── FEATURES BENTO GRID ─── */
+    .bento {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      grid-template-rows: auto;
+      gap: 16px;
+      margin-top: 56px;
+    }
+    .bcard {
+      background: linear-gradient(160deg, rgba(17,17,32,0.9), rgba(11,11,18,0.95));
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: var(--rx);
+      padding: 28px;
+      transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s;
+      overflow: hidden;
+      position: relative;
+    }
+    .bcard:hover {
+      border-color: rgba(124,111,255,0.25);
+      transform: translateY(-4px);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    }
+    .bcard::before {
+      content: '';
+      position: absolute; inset: 0; border-radius: var(--rx);
+      background: radial-gradient(circle at var(--mx,50%) var(--my,50%), rgba(124,111,255,0.06) 0%, transparent 60%);
+      opacity: 0; transition: opacity 0.3s;
+      pointer-events: none;
+    }
+    .bcard:hover::before { opacity: 1; }
+
+    .bc1 { grid-column: span 5; }
+    .bc2 { grid-column: span 7; }
+    .bc3 { grid-column: span 4; }
+    .bc4 { grid-column: span 4; }
+    .bc5 { grid-column: span 4; }
+    .bc6 { grid-column: span 8; }
+    .bc7 { grid-column: span 4; }
+
+    @media (max-width: 900px) {
+      .bc1,.bc2,.bc3,.bc4,.bc5,.bc6,.bc7 { grid-column: span 12; }
+    }
+    @media (min-width: 901px) and (max-width: 1080px) {
+      .bc1,.bc2 { grid-column: span 6; }
+      .bc3,.bc4,.bc5 { grid-column: span 4; }
+    }
+
+    .bcard-icon {
+      width: 48px; height: 48px; border-radius: 14px;
+      display: grid; place-items: center;
+      font-size: 1.4rem;
+      margin-bottom: 18px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .bcard h3 {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.05rem; font-weight: 700;
+      margin-bottom: 10px; letter-spacing: -0.01em;
+    }
+    .bcard p {
+      font-size: 0.88rem; line-height: 1.65; color: var(--muted);
+    }
+
+    /* Waveform decoration in a bcard */
+    .wave-vis {
+      display: flex; align-items: flex-end; gap: 3px;
+      height: 48px; margin-bottom: 18px;
+    }
+    .wv-bar {
+      width: 5px; border-radius: 3px;
+      background: linear-gradient(to top, var(--a1), var(--a2));
+      animation: wvb var(--d,1s) ease-in-out infinite alternate;
+      opacity: 0.8;
+    }
+    @keyframes wvb { from { height: 8px; } to { height: var(--h,30px); } }
+
+    /* Lyrics preview */
+    .lyric-lines { margin-bottom: 18px; }
+    .lyric-line {
+      font-size: 0.88rem; line-height: 2;
+      color: var(--dim);
+      transition: color 0.3s;
+    }
+    .lyric-line.active { color: var(--text); font-weight: 600; font-size: 0.95rem; }
+
+    /* Together session */
+    .together-users {
+      display: flex; gap: -8px; margin-bottom: 18px;
+      flex-wrap: wrap; gap: 6px;
+    }
+    .tu-avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      border: 2px solid var(--c1);
+      display: grid; place-items: center;
+      font-size: 0.8rem; font-weight: 700;
+      background: linear-gradient(135deg, var(--a1), var(--a2));
+      color: #fff;
+    }
+    .tu-avatar:nth-child(2) { background: linear-gradient(135deg,#ff6f9f,#ff9f6f); }
+    .tu-avatar:nth-child(3) { background: linear-gradient(135deg,var(--a3),var(--a4)); }
+    .tu-avatar.more {
+      background: rgba(255,255,255,0.08);
+      color: var(--muted);
+      font-size: 0.72rem;
+    }
+    .session-code {
+      display: inline-block;
+      font-family: monospace; font-size: 1.4rem; font-weight: 700;
+      letter-spacing: 0.25em;
+      background: linear-gradient(90deg, var(--a1), var(--a2));
+      -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* Stats mini chart */
+    .mini-chart {
+      display: flex; align-items: flex-end; gap: 6px;
+      height: 60px; margin-bottom: 18px;
+    }
+    .mc-bar {
+      flex: 1; border-radius: 4px 4px 0 0;
+      background: linear-gradient(to top, rgba(124,111,255,0.4), rgba(199,111,255,0.6));
+      transition: height 0.6s ease;
+    }
+
+    /* ─── FEATURES LIST SECTION ─── */
+    .feat-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 12px;
+      margin-top: 52px;
+    }
+    .feat-item {
+      display: flex; align-items: flex-start; gap: 14px;
+      padding: 18px 20px; border-radius: var(--r);
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.05);
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .feat-item:hover { background: rgba(255,255,255,0.06); border-color: rgba(124,111,255,0.2); }
+    .feat-item-icon {
+      font-size: 1.2rem; flex-shrink: 0; margin-top: 1px;
+    }
+    .feat-item-text h4 {
+      font-size: 0.9rem; font-weight: 600; margin-bottom: 4px;
+    }
+    .feat-item-text p {
+      font-size: 0.8rem; color: var(--muted); line-height: 1.55;
+    }
+
+    /* ─── CTA BANNER ─── */
+    .cta-banner {
+      margin: 32px 0 80px;
+      padding: 64px 48px;
+      border-radius: 28px;
+      background: linear-gradient(135deg, rgba(124,111,255,0.15), rgba(199,111,255,0.1), rgba(111,207,255,0.08));
+      border: 1px solid rgba(124,111,255,0.2);
+      text-align: center;
+      position: relative; overflow: hidden;
+    }
+    .cta-banner::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 50% 0%, rgba(124,111,255,0.15), transparent 65%);
+      pointer-events: none;
+    }
+    .cta-banner h2 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(1.6rem, 3vw, 2.4rem);
+      font-weight: 800; letter-spacing: -0.03em;
+      margin-bottom: 14px;
+    }
+    .cta-banner p {
+      color: var(--muted); font-size: 1rem; margin-bottom: 32px;
+    }
+
+    /* ─── SUPPORT SECTION ─── */
+    .support-card {
+      max-width: 520px; margin: 0 auto;
+      background: linear-gradient(160deg, rgba(17,17,32,0.95), rgba(11,11,18,0.98));
+      border: 1px solid rgba(111,255,158,0.15);
+      border-radius: var(--rx);
+      padding: 36px;
       text-align: center;
     }
-    .get  { background: rgba(61,232,142,.15);  color: var(--green); }
-    .post { background: rgba(107,142,255,.15); color: var(--accent); }
-    .ws   { background: rgba(86,212,245,.15);  color: var(--accent2); }
-    .endpoint-path {
-      font-size: 13px; font-family: 'SF Mono', 'Fira Code', monospace;
-      color: var(--text); font-weight: 500;
-      flex: 1;
+    .support-emoji { font-size: 2.5rem; margin-bottom: 16px; }
+    .support-card h3 {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.4rem; font-weight: 800;
+      margin-bottom: 12px; letter-spacing: -0.02em;
     }
-    .endpoint-desc {
-      font-size: 12px; color: var(--muted);
-    }
-
-    /* ── About / meta ── */
-    .about {
-      animation: fadeUp 0.7s 0.4s ease both;
-    }
-    .about-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 14px;
-    }
-    @media (max-width: 640px) { .about-grid { grid-template-columns: 1fr; } }
-
-    .about-card {
-      border: 1px solid var(--border2);
-      border-radius: 18px;
-      padding: 24px;
-      background: var(--surface);
-      backdrop-filter: blur(10px);
-    }
-    .about-card.full { grid-column: 1 / -1; }
-    .about-card h3 {
-      font-size: 14px; font-weight: 700;
-      color: var(--muted); letter-spacing: .05em;
-      text-transform: uppercase; margin-bottom: 16px;
-    }
-
-    .meta-row {
-      display: flex; justify-content: space-between;
-      align-items: center;
-      padding: 10px 0;
-      border-bottom: 1px solid var(--border2);
-      font-size: 14px;
-    }
-    .meta-row:last-child { border-bottom: none; }
-    .meta-row .label { color: var(--muted); }
-    .meta-row .value { font-weight: 500; color: var(--text); text-align: right; }
-    .meta-row .value code {
-      font-family: 'SF Mono', 'Fira Code', monospace;
-      font-size: 12px;
-      background: rgba(255,255,255,.07);
-      padding: 2px 7px; border-radius: 5px;
-    }
-
-    /* ── Sonora app features ── */
-    .app-features {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-      gap: 10px;
-    }
-    .app-feat {
-      display: flex; align-items: center; gap: 8px;
-      font-size: 13px; color: var(--muted);
-      padding: 8px 12px; border-radius: 10px;
-      background: rgba(255,255,255,.04);
-      border: 1px solid var(--border2);
-    }
-    .app-feat .ic { font-size: 15px; }
-
-    /* ── UPI support ── */
-    .upi-card {
-      background: linear-gradient(135deg, rgba(61,232,142,.08), rgba(107,142,255,.08));
-      border: 1px solid rgba(61,232,142,.2);
-      border-radius: 18px;
-      padding: 24px;
-      grid-column: 1 / -1;
-    }
-    .upi-card h3 {
-      color: var(--green) !important;
-    }
-    .upi-box {
+    .support-card p { font-size: 0.9rem; color: var(--muted); margin-bottom: 28px; line-height: 1.7; }
+    .upi-row {
       display: flex; align-items: center; gap: 12px;
-      background: rgba(0,0,0,.25);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 14px 18px;
-      margin-bottom: 12px;
+      background: rgba(111,255,158,0.06);
+      border: 1px solid rgba(111,255,158,0.2);
+      border-radius: var(--r); padding: 14px 18px;
+      margin-bottom: 16px; text-align: left;
     }
-    .upi-id {
-      font-family: 'SF Mono', 'Fira Code', monospace;
-      font-size: 16px; font-weight: 600;
-      color: var(--green);
-      flex: 1;
-      letter-spacing: .04em;
+    .upi-val {
+      font-family: monospace; font-size: 1.1rem; font-weight: 700;
+      color: var(--a4); flex: 1; letter-spacing: 0.03em;
     }
-    .copy-btn {
-      font-size: 12px; font-weight: 600;
-      padding: 6px 14px; border-radius: 8px;
-      border: 1px solid rgba(61,232,142,.3);
-      background: rgba(61,232,142,.12);
-      color: var(--green);
-      cursor: pointer; transition: background .2s;
+    .upi-copy {
+      font-size: 0.78rem; font-weight: 600;
+      padding: 7px 16px; border-radius: 8px;
+      border: 1px solid rgba(111,255,158,0.3);
+      background: rgba(111,255,158,0.1);
+      color: var(--a4); cursor: pointer;
+      transition: background 0.2s;
       outline: none;
     }
-    .copy-btn:hover { background: rgba(61,232,142,.22); }
-    .upi-note {
-      font-size: 13px; color: var(--muted); line-height: 1.5;
-    }
+    .upi-copy:hover { background: rgba(111,255,158,0.22); }
+    .upi-hint { font-size: 0.78rem; color: var(--muted); }
 
-    /* ── Footer ── */
+    /* ─── FOOTER ─── */
     footer {
-      margin-top: 72px;
-      padding-top: 24px;
-      border-top: 1px solid var(--border2);
+      border-top: 1px solid rgba(255,255,255,0.05);
+      padding: 36px 0 48px;
       display: flex; flex-wrap: wrap;
       justify-content: space-between; align-items: center;
-      gap: 12px;
-      font-size: 13px; color: var(--muted);
-      animation: fadeUp 0.7s 0.5s ease both;
+      gap: 16px; font-size: 0.82rem; color: var(--muted);
     }
-    footer a { color: var(--muted); text-decoration: none; }
+    footer a { color: var(--muted); text-decoration: none; transition: color 0.2s; }
     footer a:hover { color: var(--text); }
-    .footer-links { display: flex; gap: 20px; flex-wrap: wrap; }
+    .footer-links { display: flex; gap: 24px; flex-wrap: wrap; }
 
-    /* ── Animations ── */
-    @keyframes fadeUp   { from { opacity:0; transform:translateY(22px); } to { opacity:1; transform:none; } }
-    @keyframes fadeDown { from { opacity:0; transform:translateY(-14px); } to { opacity:1; transform:none; } }
+    /* ─── ANIMATIONS ─── */
+    @keyframes fadeU { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:none; } }
+    @keyframes fadeD { from { opacity:0; transform:translateY(-14px); } to { opacity:1; transform:none; } }
+
+    .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.6s ease, transform 0.6s ease; }
+    .reveal.shown { opacity: 1; transform: none; }
   </style>
 </head>
 <body>
 
-<div class="bg-canvas">
-  <div class="bg-orb3"></div>
-  <div class="bars">
-    <div class="bar" style="--h:24px;--d:1.1s"></div>
-    <div class="bar" style="--h:42px;--d:0.8s"></div>
-    <div class="bar" style="--h:34px;--d:1.4s"></div>
-    <div class="bar" style="--h:52px;--d:0.9s"></div>
-    <div class="bar" style="--h:28px;--d:1.2s"></div>
-    <div class="bar" style="--h:46px;--d:1.6s"></div>
-    <div class="bar" style="--h:20px;--d:1.0s"></div>
-  </div>
+<div class="mesh">
+  <div class="mesh-orb"></div>
+  <div class="mesh-orb"></div>
+  <div class="mesh-orb"></div>
 </div>
 
-<div class="page">
+<div class="wrap">
 
-  <!-- Nav -->
+  <!-- NAV -->
   <nav>
-    <div class="nav-logo">
-      <div class="dot">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+    <a class="nav-brand" href="/">
+      <div class="brand-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
           <path d="M9 18V5l12-2v13" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-          <circle cx="6" cy="18" r="3" stroke="#fff" stroke-width="2.2"/>
-          <circle cx="18" cy="16" r="3" stroke="#fff" stroke-width="2.2"/>
+          <circle cx="6" cy="18" r="3" fill="#fff"/>
+          <circle cx="18" cy="16" r="3" fill="#fff"/>
         </svg>
       </div>
       Sonora
-    </div>
-    <span class="nav-pill"><span class="status-dot"></span>Server Online</span>
+    </a>
+    <span class="nav-badge">Android App</span>
   </nav>
 
-  <!-- Hero -->
-  <section class="hero">
-    <div class="eyebrow"><div class="eyebrow-line"></div>Self-Hosted Backend</div>
-    <h1>Sync Music.<br><span class="grad">Together.</span></h1>
-    <p>
-      Sonora's self-hosted server powers real-time listening sessions, secure token issuance,
-      and Canvas artwork proxy — all in a single Go binary you can deploy anywhere in seconds.
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-chip">
+      <span class="chip-dot"></span>
+      Free &amp; Open Source
+    </div>
+    <h1>
+      Your Music.<br>
+      <span class="line2">No Limits.</span>
+    </h1>
+    <p class="hero-sub">
+      Sonora brings YouTube Music to life with an immersive, feature-packed Android experience.
+      Lyrics, Canvas art, offline playback, Listen Together, and so much more.
     </p>
-    <div class="hero-btns">
-      <a class="btn-primary" href="/health">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-        Health Check
+    <div class="hero-ctas">
+      <a class="btn-grad" href="https://github.com/susil-kumar/Sonora" target="_blank" rel="noopener">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/></svg>
+        View on GitHub
       </a>
-      <a class="btn-ghost" href="/v1/auth/token">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-        Token Endpoint
+      <a class="btn-outline" href="https://github.com/susil-kumar/Sonora/releases" target="_blank" rel="noopener">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download APK
       </a>
     </div>
-  </section>
 
-  <!-- Features -->
-  <section class="features">
-    <p class="section-label">What this server does</p>
-    <div class="feature-grid">
-      <div class="feature-card">
-        <div class="feature-icon">🎵</div>
+    <!-- PLAYER MOCKUP -->
+    <div class="player-wrap" style="position:relative">
+      <span class="player-tag ptag-lyrics">🎵 Synced Lyrics</span>
+      <span class="player-tag ptag-canvas">🎨 Canvas Art</span>
+      <span class="player-tag ptag-together">👥 Listen Together</span>
+      <div class="player">
+        <div class="player-art">
+          <div class="canvas-glow"></div>
+          <div class="player-art-inner">
+            <div class="vinyl"></div>
+          </div>
+        </div>
+        <div class="player-meta">
+          <div class="player-title">Blinding Lights</div>
+          <div class="player-artist">The Weeknd</div>
+        </div>
+        <div class="player-bar"><div class="player-progress"></div></div>
+        <div class="player-times"><span>2:14</span><span>3:20</span></div>
+        <div class="player-controls">
+          <button class="ctrl-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5"/></svg>
+          </button>
+          <button class="ctrl-play">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+          </button>
+          <button class="ctrl-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BENTO FEATURES -->
+  <section class="reveal">
+    <span class="sec-eyebrow">Features</span>
+    <h2 class="sec-title">Everything music should be.</h2>
+    <p class="sec-sub">Built with Kotlin and Jetpack Compose, Sonora is a complete rethink of how music apps should feel on Android.</p>
+
+    <div class="bento">
+
+      <!-- Lyrics card -->
+      <div class="bcard bc1">
+        <div class="lyric-lines">
+          <div class="lyric-line">I've been tryna call</div>
+          <div class="lyric-line active">I've been on my own for long enough</div>
+          <div class="lyric-line">Maybe you can show me how to love</div>
+          <div class="lyric-line">Maybe</div>
+        </div>
+        <div class="bcard-icon">🎵</div>
+        <h3>Synced &amp; Translated Lyrics</h3>
+        <p>Word-by-word karaoke sync via BetterLyrics and LrcLib, with auto-scroll, seek-on-tap, and offset controls.</p>
+      </div>
+
+      <!-- Canvas card -->
+      <div class="bcard bc2">
+        <div class="bcard-icon">🎨</div>
+        <h3>Canvas &amp; Artwork</h3>
+        <p>Animated Spotify-style Canvas videos play behind your music. Full-screen immersive mode transforms the now-playing screen into a visual experience.</p>
+        <div style="margin-top:20px;height:80px;border-radius:14px;background:linear-gradient(135deg,rgba(124,111,255,0.3),rgba(199,111,255,0.3),rgba(111,207,255,0.25));position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;">
+          <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 40% 60%, rgba(199,111,255,0.4),transparent 55%),radial-gradient(ellipse at 80% 30%, rgba(111,207,255,0.35),transparent 50%);"></div>
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="1.5" stroke-linecap="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        </div>
+      </div>
+
+      <!-- Audio quality -->
+      <div class="bcard bc3">
+        <div class="wave-vis">
+          <div class="wv-bar" style="--h:22px;--d:0.9s"></div>
+          <div class="wv-bar" style="--h:38px;--d:1.1s"></div>
+          <div class="wv-bar" style="--h:30px;--d:0.8s"></div>
+          <div class="wv-bar" style="--h:48px;--d:1.3s"></div>
+          <div class="wv-bar" style="--h:28px;--d:1.0s"></div>
+          <div class="wv-bar" style="--h:44px;--d:0.7s"></div>
+          <div class="wv-bar" style="--h:34px;--d:1.4s"></div>
+          <div class="wv-bar" style="--h:18px;--d:0.95s"></div>
+        </div>
+        <div class="bcard-icon">🎛️</div>
+        <h3>Audio Engine</h3>
+        <p>Equalizer, bass boost, 5-band EQ, and high-bitrate streaming up to 256kbps.</p>
+      </div>
+
+      <!-- Listen Together -->
+      <div class="bcard bc4">
+        <div class="together-users">
+          <div class="tu-avatar">S</div>
+          <div class="tu-avatar">A</div>
+          <div class="tu-avatar">R</div>
+          <div class="tu-avatar more">+4</div>
+        </div>
+        <div class="session-code">K7MN2P</div>
+        <div style="margin:12px 0 18px;font-size:0.78rem;color:var(--muted)">Listening together &bull; synced</div>
+        <div class="bcard-icon">👥</div>
         <h3>Listen Together</h3>
-        <p>Create live sessions with WebSocket sync. Join codes, host approval, guest controls, kick &amp; ban.</p>
+        <p>Real-time synced sessions. Share a code and listen with friends anywhere.</p>
       </div>
-      <div class="feature-card">
-        <div class="feature-icon">🔐</div>
-        <h3>Runtime Tokens</h3>
-        <p>Short-lived JWTs issued on demand. No static secrets shipped to the Android client.</p>
+
+      <!-- Stats card -->
+      <div class="bcard bc5">
+        <div class="mini-chart" id="miniChart">
+          <div class="mc-bar" style="height:30%"></div>
+          <div class="mc-bar" style="height:55%"></div>
+          <div class="mc-bar" style="height:40%"></div>
+          <div class="mc-bar" style="height:75%"></div>
+          <div class="mc-bar" style="height:60%"></div>
+          <div class="mc-bar" style="height:90%"></div>
+          <div class="mc-bar" style="height:70%"></div>
+        </div>
+        <div class="bcard-icon">📊</div>
+        <h3>Listening Stats</h3>
+        <p>Personality insights, top artists, total hours, and your unique listening identity.</p>
       </div>
-      <div class="feature-card">
-        <div class="feature-icon">🖼️</div>
-        <h3>Canvas Proxy</h3>
-        <p>Proxies album artwork and animated canvas from upstream — keeping credentials server-side.</p>
+
+      <!-- Offline + Library -->
+      <div class="bcard bc6" style="display:flex;gap:32px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:180px">
+          <div class="bcard-icon">⬇️</div>
+          <h3>Offline Cache</h3>
+          <p>Download any song or playlist for uninterrupted listening without an internet connection.</p>
+        </div>
+        <div style="flex:1;min-width:180px">
+          <div class="bcard-icon">📚</div>
+          <h3>Smart Library</h3>
+          <p>Songs, albums, artists, playlists, local media — all in one beautifully organized library.</p>
+        </div>
       </div>
-      <div class="feature-card">
-        <div class="feature-icon">⚡</div>
-        <h3>Zero-dependency deploy</h3>
-        <p>Single static binary. Works on Fly.io, Railway, Render, VPS — or your own machine.</p>
+
+      <!-- Last.fm -->
+      <div class="bcard bc7">
+        <div class="bcard-icon">🎤</div>
+        <h3>Last.fm Scrobble</h3>
+        <p>Every track you play is automatically scrobbled to your Last.fm profile.</p>
       </div>
-      <div class="feature-card">
-        <div class="feature-icon">🛡️</div>
-        <h3>Privacy First</h3>
-        <p>No analytics, no tracking. Your listening data stays between you and your guests.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">🌐</div>
-        <h3>CORS Ready</h3>
-        <p>Full CORS support with structured JSON errors for easy integration from any client.</p>
-      </div>
+
     </div>
   </section>
 
-  <!-- API Endpoints -->
-  <section class="endpoints">
-    <p class="section-label">API endpoints</p>
-    <div class="endpoint-list">
-      <a class="endpoint" href="/health">
-        <span class="method get">GET</span>
-        <span class="endpoint-path">/health</span>
-        <span class="endpoint-desc">Server health check</span>
+  <!-- FULL FEATURES LIST -->
+  <section class="reveal">
+    <span class="sec-eyebrow">Everything included</span>
+    <h2 class="sec-title">No feature left behind.</h2>
+    <p class="sec-sub">Sonora packs years of features that premium apps charge for, completely free.</p>
+
+    <div class="feat-list">
+      <div class="feat-item"><span class="feat-item-icon">🎶</span><div class="feat-item-text"><h4>YouTube Music Source</h4><p>Full catalogue streaming powered by InnerTube.</p></div></div>
+      <div class="feat-item"><span class="feat-item-icon">📻</span><div class="feat-item-text"><h4>Radio &amp; Mix</h4><p>Artist, song, and genre-based radio stations.</p></div></div>
+      <div class="feat-item"><span class="feat-item-icon">🔀</span><div class="feat-item-text"><h4>Queue &amp; Shuffle</h4><p>Smart queue with drag-to-reorder and sleep timer.</p></div></div>
+      <div class="feat-item"><span class="feat-item-icon">🏠</span><div class="feat-item-text"><h4>Local Media</h4><p>Play music stored on your device seamlessly.</p></div></div>
+      <div class="feat-item"><span class="feat-item-icon">🔁</span><div class="feat-item-text"><h4>Repeat Modes</h4><p>Off, repeat one, repeat all — always in control.</p></div></div>
+      <div class="feat-item"><span class="feat-item-icon">🎮</span><div class="feat-item-text"><h4>Discord Rich Presence</h4><p>Show what you're listening to on Discord.</p></div></div>
+      <div class="feat-item"><span class="feat-item-icon">🌙</span><div class="feat-item-text"><h4>Sleep Timer</h4><p>Auto-stop music after a set duration.</p></div></div>
+      <div class="feat-item"><span class="feat-item-icon">📱</span><div class="feat-item-text"><h4>Material You</h4><p>Dynamic color theming that matches your wallpaper.</p></div></div>
+      <div class="feat-item"><span class="feat-item-icon">🔍</span><div class="feat-item-text"><h4>Search &amp; Discover</h4><p>Find artists, albums, and songs instantly.</p></div></div>
+      <div class="feat-item"><span class="feat-item-icon">⭐</span><div class="feat-item-text"><h4>Favorites</h4><p>Like and save songs to your local library.</p></div></div>
+      <div class="feat-item"><span class="feat-item-icon">🔔</span><div class="feat-item-text"><h4>Media Notification</h4><p>Full playback controls from the notification shade.</p></div></div>
+      <div class="feat-item"><span class="feat-item-icon">🛡️</span><div class="feat-item-text"><h4>Privacy First</h4><p>No analytics, no trackers. Your data stays yours.</p></div></div>
+    </div>
+  </section>
+
+  <!-- CTA BANNER -->
+  <div class="cta-banner reveal">
+    <h2>Open Source &amp; Free Forever</h2>
+    <p>Sonora is MIT licensed. Fork it, contribute, or just enjoy the music.</p>
+    <div style="display:flex;justify-content:center;flex-wrap:wrap;gap:14px;">
+      <a class="btn-grad" href="https://github.com/susil-kumar/Sonora" target="_blank" rel="noopener">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/></svg>
+        Star on GitHub
       </a>
-      <div class="endpoint">
-        <span class="method post">POST</span>
-        <span class="endpoint-path">/v1/auth/token</span>
-        <span class="endpoint-desc">Issue scoped JWT token</span>
+      <a class="btn-outline" href="https://github.com/susil-kumar/Sonora/issues" target="_blank" rel="noopener">Report an Issue</a>
+    </div>
+  </div>
+
+  <!-- SUPPORT -->
+  <section style="padding-bottom:32px;" class="reveal">
+    <div style="text-align:center;margin-bottom:40px;">
+      <span class="sec-eyebrow">Support</span>
+      <h2 class="sec-title">Fuel the dev.</h2>
+    </div>
+    <div class="support-card">
+      <div class="support-emoji">☕</div>
+      <h3>Buy Me a Coffee</h3>
+      <p>Sonora is built with passion as a free, open-source project. If it brings you joy, consider supporting development via UPI.</p>
+      <div class="upi-row">
+        <span class="upi-val" id="upiId">iamsusil@fam</span>
+        <button class="upi-copy" onclick="copyUPI()">Copy</button>
       </div>
-      <div class="endpoint">
-        <span class="method post">POST</span>
-        <span class="endpoint-path">/v1/together/sessions</span>
-        <span class="endpoint-desc">Create listening session • <code>together:rw</code></span>
-      </div>
-      <div class="endpoint">
-        <span class="method post">POST</span>
-        <span class="endpoint-path">/v1/together/sessions/resolve</span>
-        <span class="endpoint-desc">Resolve join code → session • <code>together:rw</code></span>
-      </div>
-      <div class="endpoint">
-        <span class="method ws">WS</span>
-        <span class="endpoint-path">/v1/together/ws</span>
-        <span class="endpoint-desc">Real-time sync WebSocket • <code>together:rw</code></span>
-      </div>
-      <div class="endpoint">
-        <span class="method get">GET</span>
-        <span class="endpoint-path">/v1/canvas</span>
-        <span class="endpoint-desc">Canvas artwork proxy • <code>canvas:read</code></span>
-      </div>
-      <div class="endpoint">
-        <span class="method get">GET</span>
-        <span class="endpoint-path">/v1/canvas/health</span>
-        <span class="endpoint-desc">Canvas upstream health • <code>canvas:read</code></span>
-      </div>
+      <p class="upi-hint">Open GPay, PhonePe, Paytm, or BHIM &rarr; Send money &rarr; paste the UPI ID. Thank you! 🙏</p>
     </div>
   </section>
 
-  <!-- About -->
-  <section class="about">
-    <p class="section-label">About Sonora</p>
-    <div class="about-grid">
-
-      <!-- Project info -->
-      <div class="about-card">
-        <h3>Project Details</h3>
-        <div class="meta-row"><span class="label">Developer</span><span class="value">Susil Kumar</span></div>
-        <div class="meta-row"><span class="label">App</span><span class="value">Sonora Music</span></div>
-        <div class="meta-row"><span class="label">Platform</span><span class="value">Android</span></div>
-        <div class="meta-row"><span class="label">Health endpoint</span><span class="value"><code>/health</code></span></div>
-        <div class="meta-row"><span class="label">Token endpoint</span><span class="value"><code>POST /v1/auth/token</code></span></div>
-      </div>
-
-      <!-- App features -->
-      <div class="about-card">
-        <h3>Sonora App Features</h3>
-        <div class="app-features">
-          <div class="app-feat"><span class="ic">🎶</span>YouTube Music</div>
-          <div class="app-feat"><span class="ic">👥</span>Listen Together</div>
-          <div class="app-feat"><span class="ic">🎨</span>Canvas Art</div>
-          <div class="app-feat"><span class="ic">📝</span>Lyrics</div>
-          <div class="app-feat"><span class="ic">📻</span>Radio</div>
-          <div class="app-feat"><span class="ic">🎛️</span>Equalizer</div>
-          <div class="app-feat"><span class="ic">⬇️</span>Offline Cache</div>
-          <div class="app-feat"><span class="ic">🔀</span>Smart Queue</div>
-          <div class="app-feat"><span class="ic">🌙</span>Sleep Timer</div>
-          <div class="app-feat"><span class="ic">🏠</span>Local Media</div>
-          <div class="app-feat"><span class="ic">🎤</span>Last.fm Scrobble</div>
-          <div class="app-feat"><span class="ic">🎮</span>Discord RPC</div>
-        </div>
-      </div>
-
-      <!-- UPI Support -->
-      <div class="about-card upi-card">
-        <h3>☕ Support Development</h3>
-        <p class="upi-note" style="margin-bottom:16px">
-          Sonora is built with ❤️ as a free, open-source project. If it brings you joy,
-          consider buying the developer a coffee — every contribution keeps the project alive!
-        </p>
-        <div class="upi-box">
-          <span class="upi-id" id="upiId">iamsusil@fam</span>
-          <button class="copy-btn" onclick="copyUPI()">Copy</button>
-        </div>
-        <p class="upi-note">
-          Open any UPI app (GPay, PhonePe, Paytm, BHIM) → Send money → paste the ID above.
-          No minimum. Thank you for supporting independent development! 🙏
-        </p>
-      </div>
-
-    </div>
-  </section>
-
-  <!-- Footer -->
+  <!-- FOOTER -->
   <footer>
-    <span>© 2026 Sonora · Made with ♥ by Susil Kumar</span>
+    <span>© 2026 Sonora &mdash; Made with ♥ by Susil Kumar</span>
     <div class="footer-links">
-      <a href="/health">Health</a>
-      <a href="/v1/auth/token">Token API</a>
+      <a href="https://github.com/susil-kumar/Sonora" target="_blank" rel="noopener">GitHub</a>
+      <a href="/health">Server Health</a>
     </div>
   </footer>
 
 </div>
 
 <script>
+  // UPI copy
   function copyUPI() {
     const id = document.getElementById('upiId').textContent;
     navigator.clipboard.writeText(id).then(() => {
-      const btn = document.querySelector('.copy-btn');
+      const btn = document.querySelector('.upi-copy');
       const orig = btn.textContent;
       btn.textContent = 'Copied!';
-      btn.style.background = 'rgba(61,232,142,.35)';
+      btn.style.background = 'rgba(111,255,158,0.3)';
       setTimeout(() => { btn.textContent = orig; btn.style.background = ''; }, 1800);
     });
   }
 
-  // Stagger feature card entrance
-  const observer = new IntersectionObserver((entries) => {
+  // Scroll reveal
+  const ro = new IntersectionObserver((entries) => {
     entries.forEach((e, i) => {
       if (e.isIntersecting) {
-        e.target.style.animation = 'fadeUp 0.5s ' + (i * 0.07) + 's ease both';
-        observer.unobserve(e.target);
+        setTimeout(() => e.target.classList.add('shown'), i * 60);
+        ro.unobserve(e.target);
       }
     });
-  }, { threshold: 0.1 });
-  document.querySelectorAll('.feature-card, .endpoint, .about-card').forEach(el => {
-    el.style.opacity = '0';
-    observer.observe(el);
+  }, { threshold: 0.08 });
+  document.querySelectorAll('.reveal, .bcard, .feat-item').forEach(el => {
+    if (!el.classList.contains('reveal')) { el.classList.add('reveal'); }
+    ro.observe(el);
   });
+
+  // Mouse glow on bento cards
+  document.querySelectorAll('.bcard').forEach(card => {
+    card.addEventListener('mousemove', e => {
+      const r = card.getBoundingClientRect();
+      const x = ((e.clientX - r.left) / r.width * 100).toFixed(1) + '%';
+      const y = ((e.clientY - r.top) / r.height * 100).toFixed(1) + '%';
+      card.style.setProperty('--mx', x);
+      card.style.setProperty('--my', y);
+    });
+  });
+
+  // Animate mini chart bars
+  const chartBars = document.querySelectorAll('.mc-bar');
+  setInterval(() => {
+    chartBars.forEach(b => {
+      b.style.height = (20 + Math.random() * 75) + '%';
+    });
+  }, 2000);
 </script>
 </body>
 </html>`
@@ -1215,6 +1472,7 @@ func (s *Server) handleLandingPage(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(html))
 }
+
 
 func (s *Server) handleIssueToken(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
