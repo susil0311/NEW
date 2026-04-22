@@ -38,7 +38,7 @@ object TogetherOnlineEndpoint {
      * ║  Example: "https://sonora-together.onrender.com"        ║
      * ╚══════════════════════════════════════════════════════════╝
      */
-    private const val RENDER_BASE_URL = "https://sonora-together.onrender.com"
+    private const val RENDER_BASE_URL = "https://new-mdkg.onrender.com"
 
     // Dynamic source URLs (optional – lets you change the server URL
     // without shipping a new APK by updating a text file on GitHub).
