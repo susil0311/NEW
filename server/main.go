@@ -607,7 +607,6 @@ func (s *Server) handleLandingPage(w http.ResponseWriter, r *http.Request) {
       --c0: #06060a;
       --c1: #0b0b12;
       --c2: #111120;
-      --c3: #1a1a2e;
       --text: #f0efff;
       --muted: #7a7a9d;
       --dim: #3a3a5c;
@@ -618,10 +617,8 @@ func (s *Server) handleLandingPage(w http.ResponseWriter, r *http.Request) {
       --r: 0.75rem;
       --rx: 1.5rem;
     }
-
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { scroll-behavior: smooth; }
-
     body {
       font-family: 'DM Sans', system-ui, sans-serif;
       background: var(--c0);
@@ -629,129 +626,97 @@ func (s *Server) handleLandingPage(w http.ResponseWriter, r *http.Request) {
       overflow-x: hidden;
       min-height: 100vh;
     }
-
-    /* ─── NOISE GRAIN OVERLAY ─── */
     body::before {
       content: '';
       position: fixed; inset: 0; z-index: 1000; pointer-events: none;
-      opacity: 0.032;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+      opacity: 0.028;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
       background-size: 200px 200px;
     }
 
-    /* ─── ANIMATED BACKGROUND MESH ─── */
-    .mesh {
-      position: fixed; inset: 0; z-index: 0; pointer-events: none;
-      overflow: hidden;
-    }
-    .mesh-orb {
-      position: absolute;
-      border-radius: 50%;
-      filter: blur(120px);
-      opacity: 0.18;
-    }
-    .mesh-orb:nth-child(1) {
-      width: 800px; height: 800px;
-      background: var(--a1);
-      top: -300px; left: -200px;
-      animation: orb1 20s ease-in-out infinite alternate;
-    }
-    .mesh-orb:nth-child(2) {
-      width: 600px; height: 600px;
-      background: var(--a2);
-      top: 30%; right: -200px;
-      animation: orb2 25s ease-in-out infinite alternate;
-    }
-    .mesh-orb:nth-child(3) {
-      width: 500px; height: 500px;
-      background: var(--a3);
-      bottom: -100px; left: 30%;
-      animation: orb3 18s ease-in-out infinite alternate;
-    }
-    @keyframes orb1 { to { transform: translate(120px, 80px) scale(1.2); } }
-    @keyframes orb2 { to { transform: translate(-80px, 120px) scale(0.85); } }
-    @keyframes orb3 { to { transform: translate(-60px, -80px) scale(1.15); } }
+    /* MESH */
+    .mesh { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+    .mesh-orb { position: absolute; border-radius: 50%; filter: blur(130px); opacity: 0.16; }
+    .mesh-orb:nth-child(1) { width: 900px; height: 900px; background: var(--a1); top: -350px; left: -250px; animation: o1 22s ease-in-out infinite alternate; }
+    .mesh-orb:nth-child(2) { width: 650px; height: 650px; background: var(--a2); top: 25%; right: -220px; animation: o2 28s ease-in-out infinite alternate; }
+    .mesh-orb:nth-child(3) { width: 550px; height: 550px; background: var(--a3); bottom: -150px; left: 25%; animation: o3 20s ease-in-out infinite alternate; }
+    @keyframes o1 { to { transform: translate(100px, 90px) scale(1.2); } }
+    @keyframes o2 { to { transform: translate(-90px, 100px) scale(0.85); } }
+    @keyframes o3 { to { transform: translate(-50px, -70px) scale(1.15); } }
 
-    /* ─── LAYOUT ─── */
-    .wrap {
-      position: relative; z-index: 1;
-      max-width: 1100px; margin: 0 auto;
-      padding: 0 28px;
-    }
+    /* LAYOUT */
+    .wrap { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 0 28px; }
 
-    /* ─── NAV ─── */
+    /* NAV */
     nav {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 28px 0 0;
+      padding: 28px 0;
       animation: fadeD 0.6s ease both;
     }
     .nav-brand {
-      display: flex; align-items: center; gap: 10px;
+      display: flex; align-items: center; gap: 12px;
       font-family: 'Syne', sans-serif;
-      font-weight: 800; font-size: 1.2rem;
-      letter-spacing: -0.02em;
+      font-weight: 800; font-size: 1.25rem; letter-spacing: -0.02em;
       text-decoration: none; color: var(--text);
     }
-    .brand-icon {
-      width: 36px; height: 36px; border-radius: 10px;
-      background: linear-gradient(135deg, var(--a1), var(--a2));
-      display: grid; place-items: center;
-      box-shadow: 0 0 24px rgba(124,111,255,0.5);
+    .nav-logo {
+      width: 40px; height: 40px; border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 0 28px rgba(124,111,255,0.5);
       flex-shrink: 0;
     }
+    .nav-logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .nav-badge {
-      font-size: 0.72rem; font-weight: 500;
-      letter-spacing: 0.04em;
+      font-size: 0.72rem; font-weight: 500; letter-spacing: 0.04em;
       color: var(--muted);
       background: rgba(255,255,255,0.04);
       border: 1px solid rgba(255,255,255,0.08);
       padding: 5px 14px; border-radius: 99px;
     }
 
-    /* ─── HERO ─── */
-    .hero {
-      padding: 100px 0 80px;
-      text-align: center;
-    }
+    /* HERO */
+    .hero { padding: 80px 0 60px; text-align: center; }
     .hero-chip {
       display: inline-flex; align-items: center; gap: 8px;
       font-size: 0.78rem; font-weight: 500; letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--a1);
+      text-transform: uppercase; color: var(--a1);
       background: rgba(124,111,255,0.1);
       border: 1px solid rgba(124,111,255,0.25);
       padding: 6px 16px; border-radius: 99px;
-      margin-bottom: 32px;
+      margin-bottom: 28px;
       animation: fadeU 0.7s 0.1s ease both;
     }
     .chip-dot {
       width: 6px; height: 6px; border-radius: 50%;
-      background: var(--a1);
-      box-shadow: 0 0 8px var(--a1);
+      background: var(--a1); box-shadow: 0 0 8px var(--a1);
       animation: pulse 2s ease-in-out infinite;
     }
     @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
 
+    .hero-logo {
+      width: 110px; height: 110px; border-radius: 26px;
+      margin: 0 auto 28px;
+      overflow: hidden;
+      box-shadow: 0 24px 80px rgba(124,111,255,0.45), 0 0 0 1px rgba(255,255,255,0.08) inset;
+      animation: fadeU 0.7s 0.05s ease both;
+    }
+    .hero-logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
     .hero h1 {
       font-family: 'Syne', sans-serif;
-      font-size: clamp(3rem, 7vw, 6rem);
-      font-weight: 800;
-      line-height: 1.0;
-      letter-spacing: -0.04em;
-      margin-bottom: 28px;
+      font-size: clamp(2.8rem, 6.5vw, 5.5rem);
+      font-weight: 800; line-height: 1.0;
+      letter-spacing: -0.04em; margin-bottom: 24px;
       animation: fadeU 0.7s 0.15s ease both;
     }
-    .hero h1 .line2 {
-      display: block;
+    .grad {
       background: linear-gradient(100deg, var(--a1) 0%, var(--a2) 50%, var(--a3) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
       background-clip: text;
     }
     .hero-sub {
-      font-size: 1.15rem; font-weight: 300; line-height: 1.7;
-      color: var(--muted);
-      max-width: 560px; margin: 0 auto 44px;
+      font-size: 1.1rem; font-weight: 300; line-height: 1.75;
+      color: var(--muted); max-width: 540px; margin: 0 auto 40px;
       animation: fadeU 0.7s 0.2s ease both;
     }
     .hero-ctas {
@@ -767,7 +732,7 @@ func (s *Server) handleLandingPage(w http.ResponseWriter, r *http.Request) {
       box-shadow: 0 6px 32px rgba(124,111,255,0.4);
       transition: transform 0.2s, box-shadow 0.2s;
     }
-    .btn-grad:hover { transform: translateY(-3px); box-shadow: 0 12px 40px rgba(124,111,255,0.55); }
+    .btn-grad:hover { transform: translateY(-3px); box-shadow: 0 12px 40px rgba(124,111,255,0.6); }
     .btn-outline {
       display: inline-flex; align-items: center; gap: 9px;
       font-size: 0.9rem; font-weight: 500;
@@ -779,147 +744,12 @@ func (s *Server) handleLandingPage(w http.ResponseWriter, r *http.Request) {
     }
     .btn-outline:hover { border-color: rgba(255,255,255,0.25); background: rgba(255,255,255,0.08); }
 
-    /* ─── MOCKUP PLAYER ─── */
-    .player-wrap {
-      margin: 72px auto 0;
-      max-width: 420px;
-      animation: fadeU 0.8s 0.3s ease both;
-    }
-    .player {
-      background: linear-gradient(160deg, rgba(26,26,46,0.95), rgba(11,11,18,0.98));
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 28px;
-      padding: 28px;
-      box-shadow: 0 40px 120px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04) inset;
-      backdrop-filter: blur(20px);
-      position: relative;
-      overflow: hidden;
-    }
-    .player::before {
-      content:'';
-      position: absolute; inset: 0;
-      background: radial-gradient(ellipse at 50% 0%, rgba(124,111,255,0.12) 0%, transparent 60%);
-      pointer-events: none;
-    }
-    .player-art {
-      width: 100%; aspect-ratio: 1;
-      border-radius: 20px;
-      background: linear-gradient(135deg, #1e1040, #2a0040, #001840, #001a30);
-      margin-bottom: 20px;
-      position: relative;
-      overflow: hidden;
-      box-shadow: 0 16px 48px rgba(0,0,0,0.5);
-    }
-    .player-art-inner {
-      position: absolute; inset: 0;
-      display: grid; place-items: center;
-    }
-    .vinyl {
-      width: 160px; height: 160px; border-radius: 50%;
-      background: conic-gradient(from 0deg, #1a1040, #0d0020, #001830, #0a0a1a, #1a1040);
-      box-shadow: 0 0 60px rgba(124,111,255,0.3);
-      animation: spin 12s linear infinite;
-      position: relative;
-    }
-    .vinyl::after {
-      content: '';
-      position: absolute; inset: 35%;
-      border-radius: 50%;
-      background: radial-gradient(circle, #252535, #15151f);
-      box-shadow: 0 0 0 6px rgba(124,111,255,0.2);
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .canvas-glow {
-      position: absolute; inset: 0;
-      background: radial-gradient(ellipse at 30% 70%, rgba(199,111,255,0.25), transparent 50%),
-                  radial-gradient(ellipse at 80% 20%, rgba(111,207,255,0.2), transparent 50%);
-    }
-    .player-meta {
-      margin-bottom: 20px;
-    }
-    .player-title {
-      font-family: 'Syne', sans-serif;
-      font-size: 1.1rem; font-weight: 700;
-      margin-bottom: 4px;
-    }
-    .player-artist {
-      font-size: 0.85rem; color: var(--muted);
-    }
-    .player-bar {
-      height: 3px; border-radius: 99px;
-      background: rgba(255,255,255,0.1);
-      margin-bottom: 8px; overflow: hidden;
-    }
-    .player-progress {
-      height: 100%; width: 62%;
-      background: linear-gradient(90deg, var(--a1), var(--a2));
-      border-radius: 99px;
-    }
-    .player-times {
-      display: flex; justify-content: space-between;
-      font-size: 0.72rem; color: var(--muted);
-      margin-bottom: 24px;
-    }
-    .player-controls {
-      display: flex; align-items: center; justify-content: center; gap: 28px;
-    }
-    .ctrl-btn {
-      background: none; border: none; cursor: pointer;
-      color: var(--muted); padding: 0;
-      transition: color 0.2s, transform 0.15s;
-    }
-    .ctrl-btn:hover { color: var(--text); transform: scale(1.1); }
-    .ctrl-play {
-      width: 54px; height: 54px; border-radius: 50%;
-      background: linear-gradient(135deg, var(--a1), var(--a2));
-      border: none; cursor: pointer;
-      display: grid; place-items: center;
-      box-shadow: 0 6px 24px rgba(124,111,255,0.45);
-      transition: transform 0.2s, box-shadow 0.2s;
-      color: #fff;
-    }
-    .ctrl-play:hover { transform: scale(1.08); box-shadow: 0 10px 32px rgba(124,111,255,0.6); }
-
-    /* Floating tags on player */
-    .player-tag {
-      position: absolute;
-      font-size: 0.7rem; font-weight: 600;
-      padding: 5px 11px; border-radius: 99px;
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255,255,255,0.12);
-      white-space: nowrap;
-      animation: float 4s ease-in-out infinite;
-    }
-    .ptag-lyrics {
-      top: 28px; right: -24px;
-      background: rgba(124,111,255,0.2);
-      color: var(--a1);
-      animation-delay: 0s;
-    }
-    .ptag-canvas {
-      bottom: 100px; right: -32px;
-      background: rgba(199,111,255,0.2);
-      color: var(--a2);
-      animation-delay: 1.3s;
-    }
-    .ptag-together {
-      bottom: 60px; left: -40px;
-      background: rgba(111,255,158,0.15);
-      color: var(--a4);
-      animation-delay: 0.7s;
-    }
-    @keyframes float {
-      0%,100% { transform: translateY(0px); }
-      50% { transform: translateY(-8px); }
-    }
-
-    /* ─── SECTION SHARED ─── */
-    section { padding: 96px 0; }
+    /* SCREENSHOTS */
+    .screenshots-section { padding: 80px 0 0; }
     .sec-eyebrow {
       display: inline-block;
       font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em;
-      text-transform: uppercase; color: var(--a1);
-      margin-bottom: 14px;
+      text-transform: uppercase; color: var(--a1); margin-bottom: 14px;
     }
     .sec-title {
       font-family: 'Syne', sans-serif;
@@ -927,27 +757,56 @@ func (s *Server) handleLandingPage(w http.ResponseWriter, r *http.Request) {
       font-weight: 800; letter-spacing: -0.03em;
       line-height: 1.1; margin-bottom: 18px;
     }
-    .sec-sub {
-      font-size: 1rem; line-height: 1.7; color: var(--muted);
-      max-width: 540px;
+    .sec-sub { font-size: 1rem; line-height: 1.7; color: var(--muted); max-width: 520px; }
+
+    .screenshots-scroll {
+      margin-top: 48px;
+      display: flex; gap: 16px;
+      overflow-x: auto;
+      padding-bottom: 20px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(124,111,255,0.3) transparent;
+      scroll-snap-type: x mandatory;
+    }
+    .screenshots-scroll::-webkit-scrollbar { height: 4px; }
+    .screenshots-scroll::-webkit-scrollbar-track { background: transparent; }
+    .screenshots-scroll::-webkit-scrollbar-thumb { background: rgba(124,111,255,0.3); border-radius: 99px; }
+    .screenshot-frame {
+      flex-shrink: 0;
+      width: 200px;
+      scroll-snap-align: start;
+      border-radius: 20px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+      transition: transform 0.3s, box-shadow 0.3s;
+      background: var(--c2);
+    }
+    .screenshot-frame:hover {
+      transform: translateY(-8px) scale(1.02);
+      box-shadow: 0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(124,111,255,0.3);
+    }
+    .screenshot-frame img { width: 100%; display: block; }
+    .screenshot-label {
+      padding: 10px 14px;
+      font-size: 0.72rem; font-weight: 500; color: var(--muted);
+      text-align: center; background: rgba(0,0,0,0.3);
     }
 
-    /* ─── FEATURES BENTO GRID ─── */
+    /* BENTO */
+    .bento-section { padding: 96px 0; }
     .bento {
       display: grid;
       grid-template-columns: repeat(12, 1fr);
-      grid-template-rows: auto;
       gap: 16px;
-      margin-top: 56px;
+      margin-top: 52px;
     }
     .bcard {
       background: linear-gradient(160deg, rgba(17,17,32,0.9), rgba(11,11,18,0.95));
       border: 1px solid rgba(255,255,255,0.06);
-      border-radius: var(--rx);
-      padding: 28px;
+      border-radius: var(--rx); padding: 28px;
       transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s;
-      overflow: hidden;
-      position: relative;
+      overflow: hidden; position: relative;
     }
     .bcard:hover {
       border-color: rgba(124,111,255,0.25);
@@ -955,14 +814,11 @@ func (s *Server) handleLandingPage(w http.ResponseWriter, r *http.Request) {
       box-shadow: 0 20px 60px rgba(0,0,0,0.4);
     }
     .bcard::before {
-      content: '';
-      position: absolute; inset: 0; border-radius: var(--rx);
+      content: ''; position: absolute; inset: 0; border-radius: var(--rx);
       background: radial-gradient(circle at var(--mx,50%) var(--my,50%), rgba(124,111,255,0.06) 0%, transparent 60%);
-      opacity: 0; transition: opacity 0.3s;
-      pointer-events: none;
+      opacity: 0; transition: opacity 0.3s; pointer-events: none;
     }
     .bcard:hover::before { opacity: 1; }
-
     .bc1 { grid-column: span 5; }
     .bc2 { grid-column: span 7; }
     .bc3 { grid-column: span 4; }
@@ -970,19 +826,12 @@ func (s *Server) handleLandingPage(w http.ResponseWriter, r *http.Request) {
     .bc5 { grid-column: span 4; }
     .bc6 { grid-column: span 8; }
     .bc7 { grid-column: span 4; }
-
     @media (max-width: 900px) {
       .bc1,.bc2,.bc3,.bc4,.bc5,.bc6,.bc7 { grid-column: span 12; }
     }
-    @media (min-width: 901px) and (max-width: 1080px) {
-      .bc1,.bc2 { grid-column: span 6; }
-      .bc3,.bc4,.bc5 { grid-column: span 4; }
-    }
-
     .bcard-icon {
       width: 48px; height: 48px; border-radius: 14px;
-      display: grid; place-items: center;
-      font-size: 1.4rem;
+      display: grid; place-items: center; font-size: 1.4rem;
       margin-bottom: 18px;
       background: rgba(255,255,255,0.05);
       border: 1px solid rgba(255,255,255,0.08);
@@ -992,11 +841,8 @@ func (s *Server) handleLandingPage(w http.ResponseWriter, r *http.Request) {
       font-size: 1.05rem; font-weight: 700;
       margin-bottom: 10px; letter-spacing: -0.01em;
     }
-    .bcard p {
-      font-size: 0.88rem; line-height: 1.65; color: var(--muted);
-    }
+    .bcard p { font-size: 0.88rem; line-height: 1.65; color: var(--muted); }
 
-    /* Waveform decoration in a bcard */
     .wave-vis {
       display: flex; align-items: flex-end; gap: 3px;
       height: 48px; margin-bottom: 18px;
@@ -1009,61 +855,41 @@ func (s *Server) handleLandingPage(w http.ResponseWriter, r *http.Request) {
     }
     @keyframes wvb { from { height: 8px; } to { height: var(--h,30px); } }
 
-    /* Lyrics preview */
     .lyric-lines { margin-bottom: 18px; }
-    .lyric-line {
-      font-size: 0.88rem; line-height: 2;
-      color: var(--dim);
-      transition: color 0.3s;
-    }
+    .lyric-line { font-size: 0.88rem; line-height: 2; color: var(--dim); }
     .lyric-line.active { color: var(--text); font-weight: 600; font-size: 0.95rem; }
 
-    /* Together session */
-    .together-users {
-      display: flex; gap: -8px; margin-bottom: 18px;
-      flex-wrap: wrap; gap: 6px;
-    }
+    .together-users { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px; }
     .tu-avatar {
       width: 36px; height: 36px; border-radius: 50%;
       border: 2px solid var(--c1);
       display: grid; place-items: center;
       font-size: 0.8rem; font-weight: 700;
-      background: linear-gradient(135deg, var(--a1), var(--a2));
-      color: #fff;
+      background: linear-gradient(135deg, var(--a1), var(--a2)); color: #fff;
     }
     .tu-avatar:nth-child(2) { background: linear-gradient(135deg,#ff6f9f,#ff9f6f); }
     .tu-avatar:nth-child(3) { background: linear-gradient(135deg,var(--a3),var(--a4)); }
-    .tu-avatar.more {
-      background: rgba(255,255,255,0.08);
-      color: var(--muted);
-      font-size: 0.72rem;
-    }
+    .tu-avatar.more { background: rgba(255,255,255,0.08); color: var(--muted); font-size: 0.72rem; }
     .session-code {
-      display: inline-block;
-      font-family: monospace; font-size: 1.4rem; font-weight: 700;
-      letter-spacing: 0.25em;
+      display: inline-block; font-family: monospace;
+      font-size: 1.4rem; font-weight: 700; letter-spacing: 0.25em;
       background: linear-gradient(90deg, var(--a1), var(--a2));
       -webkit-background-clip: text; background-clip: text;
       -webkit-text-fill-color: transparent;
     }
-
-    /* Stats mini chart */
-    .mini-chart {
-      display: flex; align-items: flex-end; gap: 6px;
-      height: 60px; margin-bottom: 18px;
-    }
+    .mini-chart { display: flex; align-items: flex-end; gap: 6px; height: 60px; margin-bottom: 18px; }
     .mc-bar {
       flex: 1; border-radius: 4px 4px 0 0;
       background: linear-gradient(to top, rgba(124,111,255,0.4), rgba(199,111,255,0.6));
       transition: height 0.6s ease;
     }
 
-    /* ─── FEATURES LIST SECTION ─── */
+    /* FEATURES LIST */
+    .feat-section { padding: 0 0 96px; }
     .feat-list {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: 12px;
-      margin-top: 52px;
+      gap: 12px; margin-top: 52px;
     }
     .feat-item {
       display: flex; align-items: flex-start; gap: 14px;
@@ -1073,99 +899,148 @@ func (s *Server) handleLandingPage(w http.ResponseWriter, r *http.Request) {
       transition: background 0.2s, border-color 0.2s;
     }
     .feat-item:hover { background: rgba(255,255,255,0.06); border-color: rgba(124,111,255,0.2); }
-    .feat-item-icon {
-      font-size: 1.2rem; flex-shrink: 0; margin-top: 1px;
+    .feat-item-icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 1px; }
+    .feat-item-text h4 { font-size: 0.9rem; font-weight: 600; margin-bottom: 4px; }
+    .feat-item-text p { font-size: 0.8rem; color: var(--muted); line-height: 1.55; }
+
+    /* DOWNLOAD */
+    .download-section { padding: 0 0 96px; }
+    .download-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 14px; margin-top: 52px;
     }
-    .feat-item-text h4 {
-      font-size: 0.9rem; font-weight: 600; margin-bottom: 4px;
+    .dl-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: var(--rx); padding: 24px 20px;
+      text-align: center; text-decoration: none;
+      transition: border-color 0.25s, transform 0.25s, background 0.25s;
+      display: flex; flex-direction: column;
+      align-items: center; gap: 14px;
     }
-    .feat-item-text p {
-      font-size: 0.8rem; color: var(--muted); line-height: 1.55;
+    .dl-card:hover {
+      border-color: rgba(124,111,255,0.35);
+      transform: translateY(-4px);
+      background: rgba(124,111,255,0.06);
+    }
+    .dl-card img { height: 44px; width: auto; max-width: 160px; object-fit: contain; filter: brightness(1.05); }
+    .dl-card-label {
+      font-size: 0.82rem; font-weight: 500; color: var(--muted);
+    }
+    .dl-card.primary-dl {
+      border-color: rgba(124,111,255,0.25);
+      background: rgba(124,111,255,0.07);
     }
 
-    /* ─── CTA BANNER ─── */
+    /* CTA BANNER */
     .cta-banner {
-      margin: 32px 0 80px;
-      padding: 64px 48px;
+      margin: 0 0 80px;
+      padding: 60px 48px;
       border-radius: 28px;
       background: linear-gradient(135deg, rgba(124,111,255,0.15), rgba(199,111,255,0.1), rgba(111,207,255,0.08));
       border: 1px solid rgba(124,111,255,0.2);
-      text-align: center;
-      position: relative; overflow: hidden;
+      text-align: center; position: relative; overflow: hidden;
     }
     .cta-banner::before {
-      content: '';
-      position: absolute; inset: 0;
-      background: radial-gradient(ellipse at 50% 0%, rgba(124,111,255,0.15), transparent 65%);
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 50% 0%, rgba(124,111,255,0.18), transparent 65%);
       pointer-events: none;
     }
+    .cta-banner-img {
+      max-width: 420px; width: 90%; margin: 0 auto 32px;
+      border-radius: 16px; overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+    .cta-banner-img img { width: 100%; display: block; }
     .cta-banner h2 {
       font-family: 'Syne', sans-serif;
       font-size: clamp(1.6rem, 3vw, 2.4rem);
-      font-weight: 800; letter-spacing: -0.03em;
-      margin-bottom: 14px;
+      font-weight: 800; letter-spacing: -0.03em; margin-bottom: 14px;
     }
-    .cta-banner p {
-      color: var(--muted); font-size: 1rem; margin-bottom: 32px;
-    }
+    .cta-banner p { color: var(--muted); font-size: 1rem; margin-bottom: 32px; }
+    .cta-btns { display: flex; justify-content: center; flex-wrap: wrap; gap: 14px; }
 
-    /* ─── SUPPORT SECTION ─── */
+    /* SUPPORT */
+    .support-section { padding: 0 0 96px; }
     .support-card {
-      max-width: 520px; margin: 0 auto;
+      max-width: 500px; margin: 52px auto 0;
       background: linear-gradient(160deg, rgba(17,17,32,0.95), rgba(11,11,18,0.98));
       border: 1px solid rgba(111,255,158,0.15);
-      border-radius: var(--rx);
-      padding: 36px;
+      border-radius: var(--rx); padding: 40px;
       text-align: center;
     }
-    .support-emoji { font-size: 2.5rem; margin-bottom: 16px; }
+    .support-logo {
+      width: 72px; height: 72px; border-radius: 18px;
+      margin: 0 auto 20px; overflow: hidden;
+      box-shadow: 0 12px 40px rgba(124,111,255,0.35);
+    }
+    .support-logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .support-card h3 {
       font-family: 'Syne', sans-serif;
       font-size: 1.4rem; font-weight: 800;
       margin-bottom: 12px; letter-spacing: -0.02em;
     }
     .support-card p { font-size: 0.9rem; color: var(--muted); margin-bottom: 28px; line-height: 1.7; }
-    .upi-row {
-      display: flex; align-items: center; gap: 12px;
-      background: rgba(111,255,158,0.06);
-      border: 1px solid rgba(111,255,158,0.2);
-      border-radius: var(--r); padding: 14px 18px;
-      margin-bottom: 16px; text-align: left;
+    .upi-btn {
+      display: inline-flex; align-items: center; gap: 10px;
+      text-decoration: none;
+      font-size: 0.95rem; font-weight: 700;
+      padding: 16px 32px; border-radius: var(--r);
+      background: linear-gradient(135deg, rgba(111,255,158,0.2), rgba(111,255,158,0.1));
+      border: 1px solid rgba(111,255,158,0.35);
+      color: var(--a4);
+      transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+      margin-bottom: 14px;
     }
-    .upi-val {
-      font-family: monospace; font-size: 1.1rem; font-weight: 700;
-      color: var(--a4); flex: 1; letter-spacing: 0.03em;
+    .upi-btn:hover {
+      background: linear-gradient(135deg, rgba(111,255,158,0.32), rgba(111,255,158,0.18));
+      transform: translateY(-2px);
+      box-shadow: 0 8px 28px rgba(111,255,158,0.2);
     }
-    .upi-copy {
-      font-size: 0.78rem; font-weight: 600;
-      padding: 7px 16px; border-radius: 8px;
-      border: 1px solid rgba(111,255,158,0.3);
-      background: rgba(111,255,158,0.1);
-      color: var(--a4); cursor: pointer;
-      transition: background 0.2s;
+    .upi-id-row {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      margin-top: 4px;
+    }
+    .upi-id-text {
+      font-family: monospace; font-size: 0.95rem; font-weight: 600;
+      color: var(--muted); letter-spacing: 0.03em;
+    }
+    .upi-copy-btn {
+      font-size: 0.72rem; font-weight: 600;
+      padding: 4px 10px; border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.04);
+      color: var(--muted); cursor: pointer;
+      transition: background 0.2s, color 0.2s;
       outline: none;
     }
-    .upi-copy:hover { background: rgba(111,255,158,0.22); }
-    .upi-hint { font-size: 0.78rem; color: var(--muted); }
+    .upi-copy-btn:hover { background: rgba(255,255,255,0.1); color: var(--text); }
+    .support-hint { font-size: 0.78rem; color: var(--dim); margin-top: 14px; line-height: 1.6; }
 
-    /* ─── FOOTER ─── */
+    /* FOOTER */
     footer {
       border-top: 1px solid rgba(255,255,255,0.05);
-      padding: 36px 0 48px;
+      padding: 36px 0 52px;
       display: flex; flex-wrap: wrap;
       justify-content: space-between; align-items: center;
       gap: 16px; font-size: 0.82rem; color: var(--muted);
     }
+    .footer-brand { display: flex; align-items: center; gap: 10px; }
+    .footer-logo { width: 28px; height: 28px; border-radius: 8px; overflow: hidden; }
+    .footer-logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
     footer a { color: var(--muted); text-decoration: none; transition: color 0.2s; }
     footer a:hover { color: var(--text); }
     .footer-links { display: flex; gap: 24px; flex-wrap: wrap; }
 
-    /* ─── ANIMATIONS ─── */
+    /* ANIMS */
     @keyframes fadeU { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:none; } }
     @keyframes fadeD { from { opacity:0; transform:translateY(-14px); } to { opacity:1; transform:none; } }
-
-    .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.6s ease, transform 0.6s ease; }
+    .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.65s ease, transform 0.65s ease; }
     .reveal.shown { opacity: 1; transform: none; }
+    .reveal-delay-1 { transition-delay: 0.08s; }
+    .reveal-delay-2 { transition-delay: 0.16s; }
+    .reveal-delay-3 { transition-delay: 0.24s; }
   </style>
 </head>
 <body>
@@ -1181,12 +1056,8 @@ func (s *Server) handleLandingPage(w http.ResponseWriter, r *http.Request) {
   <!-- NAV -->
   <nav>
     <a class="nav-brand" href="/">
-      <div class="brand-icon">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-          <path d="M9 18V5l12-2v13" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-          <circle cx="6" cy="18" r="3" fill="#fff"/>
-          <circle cx="18" cy="16" r="3" fill="#fff"/>
-        </svg>
+      <div class="nav-logo">
+        <img src="https://github.com/koiverse/Sonora/blob/main/fastlane/metadata/android/en-US/images/icon.png?raw=true" alt="Sonora" loading="eager"/>
       </div>
       Sonora
     </a>
@@ -1195,71 +1066,74 @@ func (s *Server) handleLandingPage(w http.ResponseWriter, r *http.Request) {
 
   <!-- HERO -->
   <div class="hero">
-    <div class="hero-chip">
-      <span class="chip-dot"></span>
-      Free &amp; Open Source
+    <div class="hero-chip"><span class="chip-dot"></span>Free &amp; Open Source</div>
+    <div class="hero-logo">
+      <img src="https://github.com/koiverse/Sonora/blob/main/fastlane/metadata/android/en-US/images/icon.png?raw=true" alt="Sonora Logo" loading="eager"/>
     </div>
-    <h1>
-      Your Music.<br>
-      <span class="line2">No Limits.</span>
-    </h1>
+    <h1>Your Music.<br><span class="grad">No Limits.</span></h1>
     <p class="hero-sub">
       Sonora brings YouTube Music to life with an immersive, feature-packed Android experience.
-      Lyrics, Canvas art, offline playback, Listen Together, and so much more.
+      Synced lyrics, Canvas art, offline playback, Listen Together, and so much more.
     </p>
     <div class="hero-ctas">
-      <a class="btn-grad" href="https://github.com/susil-kumar/Sonora" target="_blank" rel="noopener">
+      <a class="btn-grad" href="https://github.com/koiverse/Sonora/releases/latest" target="_blank" rel="noopener">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download APK
+      </a>
+      <a class="btn-outline" href="https://github.com/koiverse/Sonora" target="_blank" rel="noopener">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/></svg>
         View on GitHub
       </a>
-      <a class="btn-outline" href="https://github.com/susil-kumar/Sonora/releases" target="_blank" rel="noopener">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Download APK
-      </a>
-    </div>
-
-    <!-- PLAYER MOCKUP -->
-    <div class="player-wrap" style="position:relative">
-      <span class="player-tag ptag-lyrics">🎵 Synced Lyrics</span>
-      <span class="player-tag ptag-canvas">🎨 Canvas Art</span>
-      <span class="player-tag ptag-together">👥 Listen Together</span>
-      <div class="player">
-        <div class="player-art">
-          <div class="canvas-glow"></div>
-          <div class="player-art-inner">
-            <div class="vinyl"></div>
-          </div>
-        </div>
-        <div class="player-meta">
-          <div class="player-title">Blinding Lights</div>
-          <div class="player-artist">The Weeknd</div>
-        </div>
-        <div class="player-bar"><div class="player-progress"></div></div>
-        <div class="player-times"><span>2:14</span><span>3:20</span></div>
-        <div class="player-controls">
-          <button class="ctrl-btn">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5"/></svg>
-          </button>
-          <button class="ctrl-play">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
-          </button>
-          <button class="ctrl-btn">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
-          </button>
-        </div>
-      </div>
     </div>
   </div>
 
+  <!-- SCREENSHOTS -->
+  <section class="screenshots-section reveal">
+    <span class="sec-eyebrow">Screenshots</span>
+    <h2 class="sec-title">See it in action.</h2>
+    <p class="sec-sub">A carefully crafted interface built on Material 3, with dynamic colors and immersive views.</p>
+    <div class="screenshots-scroll">
+      <div class="screenshot-frame">
+        <img src="https://github.com/koiverse/Sonora/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/screenshot_1.jpg?raw=true" alt="Browse" loading="lazy"/>
+        <div class="screenshot-label">Browse</div>
+      </div>
+      <div class="screenshot-frame">
+        <img src="https://github.com/koiverse/Sonora/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/screenshot_2.jpg?raw=true" alt="Live Lyrics" loading="lazy"/>
+        <div class="screenshot-label">Live Lyrics</div>
+      </div>
+      <div class="screenshot-frame">
+        <img src="https://github.com/koiverse/Sonora/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/screenshot_3.jpg?raw=true" alt="Themes" loading="lazy"/>
+        <div class="screenshot-label">Theme Customization</div>
+      </div>
+      <div class="screenshot-frame">
+        <img src="https://github.com/koiverse/Sonora/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/screenshot_4.jpg?raw=true" alt="Statistics" loading="lazy"/>
+        <div class="screenshot-label">Live Statistics</div>
+      </div>
+      <div class="screenshot-frame">
+        <img src="https://github.com/koiverse/Sonora/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/screenshot_5.jpg?raw=true" alt="Artist" loading="lazy"/>
+        <div class="screenshot-label">Artist</div>
+      </div>
+      <div class="screenshot-frame">
+        <img src="https://github.com/koiverse/Sonora/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/screenshot_6.jpg?raw=true" alt="Album" loading="lazy"/>
+        <div class="screenshot-label">Album</div>
+      </div>
+      <div class="screenshot-frame">
+        <img src="https://github.com/koiverse/Sonora/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/screenshot_7.jpg?raw=true" alt="Player" loading="lazy"/>
+        <div class="screenshot-label">Player</div>
+      </div>
+      <div class="screenshot-frame">
+        <img src="https://github.com/koiverse/Sonora/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/screenshot_8.jpg?raw=true" alt="Settings" loading="lazy"/>
+        <div class="screenshot-label">Settings</div>
+      </div>
+    </div>
+  </section>
+
   <!-- BENTO FEATURES -->
-  <section class="reveal">
+  <section class="bento-section reveal">
     <span class="sec-eyebrow">Features</span>
     <h2 class="sec-title">Everything music should be.</h2>
-    <p class="sec-sub">Built with Kotlin and Jetpack Compose, Sonora is a complete rethink of how music apps should feel on Android.</p>
-
+    <p class="sec-sub">Built with Kotlin and Jetpack Compose — a complete rethink of how music apps should feel on Android.</p>
     <div class="bento">
-
-      <!-- Lyrics card -->
       <div class="bcard bc1">
         <div class="lyric-lines">
           <div class="lyric-line">I've been tryna call</div>
@@ -1269,21 +1143,17 @@ func (s *Server) handleLandingPage(w http.ResponseWriter, r *http.Request) {
         </div>
         <div class="bcard-icon">🎵</div>
         <h3>Synced &amp; Translated Lyrics</h3>
-        <p>Word-by-word karaoke sync via BetterLyrics and LrcLib, with auto-scroll, seek-on-tap, and offset controls.</p>
+        <p>Word-by-word karaoke sync, auto-scroll, seek-on-tap, lyrics translation and romanization.</p>
       </div>
-
-      <!-- Canvas card -->
       <div class="bcard bc2">
         <div class="bcard-icon">🎨</div>
-        <h3>Canvas &amp; Artwork</h3>
-        <p>Animated Spotify-style Canvas videos play behind your music. Full-screen immersive mode transforms the now-playing screen into a visual experience.</p>
+        <h3>Canvas &amp; Immersive Artwork</h3>
+        <p>Animated Canvas videos play behind your music. Full-screen immersive mode transforms the now-playing screen into a living visual experience with album-art powered dynamic colors.</p>
         <div style="margin-top:20px;height:80px;border-radius:14px;background:linear-gradient(135deg,rgba(124,111,255,0.3),rgba(199,111,255,0.3),rgba(111,207,255,0.25));position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;">
-          <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 40% 60%, rgba(199,111,255,0.4),transparent 55%),radial-gradient(ellipse at 80% 30%, rgba(111,207,255,0.35),transparent 50%);"></div>
+          <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 40% 60%,rgba(199,111,255,0.4),transparent 55%),radial-gradient(ellipse at 80% 30%,rgba(111,207,255,0.35),transparent 50%);"></div>
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="1.5" stroke-linecap="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
         </div>
       </div>
-
-      <!-- Audio quality -->
       <div class="bcard bc3">
         <div class="wave-vis">
           <div class="wv-bar" style="--h:22px;--d:0.9s"></div>
@@ -1297,10 +1167,8 @@ func (s *Server) handleLandingPage(w http.ResponseWriter, r *http.Request) {
         </div>
         <div class="bcard-icon">🎛️</div>
         <h3>Audio Engine</h3>
-        <p>Equalizer, bass boost, 5-band EQ, and high-bitrate streaming up to 256kbps.</p>
+        <p>EBU R128 loudness normalization, crossfade, tempo and pitch controls, system EQ and spatial audio.</p>
       </div>
-
-      <!-- Listen Together -->
       <div class="bcard bc4">
         <div class="together-users">
           <div class="tu-avatar">S</div>
@@ -1309,13 +1177,11 @@ func (s *Server) handleLandingPage(w http.ResponseWriter, r *http.Request) {
           <div class="tu-avatar more">+4</div>
         </div>
         <div class="session-code">K7MN2P</div>
-        <div style="margin:12px 0 18px;font-size:0.78rem;color:var(--muted)">Listening together &bull; synced</div>
+        <div style="margin:10px 0 16px;font-size:0.78rem;color:var(--muted)">Listening together &bull; synced</div>
         <div class="bcard-icon">👥</div>
         <h3>Listen Together</h3>
-        <p>Real-time synced sessions. Share a code and listen with friends anywhere.</p>
+        <p>Real-time synced sessions. Share a code and vibe with friends anywhere.</p>
       </div>
-
-      <!-- Stats card -->
       <div class="bcard bc5">
         <div class="mini-chart" id="miniChart">
           <div class="mc-bar" style="height:30%"></div>
@@ -1330,89 +1196,131 @@ func (s *Server) handleLandingPage(w http.ResponseWriter, r *http.Request) {
         <h3>Listening Stats</h3>
         <p>Personality insights, top artists, total hours, and your unique listening identity.</p>
       </div>
-
-      <!-- Offline + Library -->
       <div class="bcard bc6" style="display:flex;gap:32px;flex-wrap:wrap;">
         <div style="flex:1;min-width:180px">
           <div class="bcard-icon">⬇️</div>
           <h3>Offline Cache</h3>
-          <p>Download any song or playlist for uninterrupted listening without an internet connection.</p>
+          <p>Download any song or playlist for uninterrupted listening without internet.</p>
         </div>
         <div style="flex:1;min-width:180px">
-          <div class="bcard-icon">📚</div>
-          <h3>Smart Library</h3>
-          <p>Songs, albums, artists, playlists, local media — all in one beautifully organized library.</p>
+          <div class="bcard-icon">🏠</div>
+          <h3>Local Media</h3>
+          <p>Play music stored on your device alongside your streaming library.</p>
         </div>
       </div>
-
-      <!-- Last.fm -->
       <div class="bcard bc7">
         <div class="bcard-icon">🎤</div>
-        <h3>Last.fm Scrobble</h3>
-        <p>Every track you play is automatically scrobbled to your Last.fm profile.</p>
+        <h3>Last.fm &amp; ListenBrainz</h3>
+        <p>Every track auto-scrobbled to your Last.fm profile and ListenBrainz history.</p>
       </div>
-
     </div>
   </section>
 
-  <!-- FULL FEATURES LIST -->
-  <section class="reveal">
+  <!-- FEATURES LIST -->
+  <section class="feat-section reveal">
     <span class="sec-eyebrow">Everything included</span>
     <h2 class="sec-title">No feature left behind.</h2>
-    <p class="sec-sub">Sonora packs years of features that premium apps charge for, completely free.</p>
-
+    <p class="sec-sub">Sonora packs years of features that premium apps charge for — completely free.</p>
     <div class="feat-list">
       <div class="feat-item"><span class="feat-item-icon">🎶</span><div class="feat-item-text"><h4>YouTube Music Source</h4><p>Full catalogue streaming powered by InnerTube.</p></div></div>
       <div class="feat-item"><span class="feat-item-icon">📻</span><div class="feat-item-text"><h4>Radio &amp; Mix</h4><p>Artist, song, and genre-based radio stations.</p></div></div>
-      <div class="feat-item"><span class="feat-item-icon">🔀</span><div class="feat-item-text"><h4>Queue &amp; Shuffle</h4><p>Smart queue with drag-to-reorder and sleep timer.</p></div></div>
-      <div class="feat-item"><span class="feat-item-icon">🏠</span><div class="feat-item-text"><h4>Local Media</h4><p>Play music stored on your device seamlessly.</p></div></div>
-      <div class="feat-item"><span class="feat-item-icon">🔁</span><div class="feat-item-text"><h4>Repeat Modes</h4><p>Off, repeat one, repeat all — always in control.</p></div></div>
+      <div class="feat-item"><span class="feat-item-icon">🔍</span><div class="feat-item-text"><h4>Music Recognition</h4><p>Identify songs playing around you instantly.</p></div></div>
       <div class="feat-item"><span class="feat-item-icon">🎮</span><div class="feat-item-text"><h4>Discord Rich Presence</h4><p>Show what you're listening to on Discord.</p></div></div>
       <div class="feat-item"><span class="feat-item-icon">🌙</span><div class="feat-item-text"><h4>Sleep Timer</h4><p>Auto-stop music after a set duration.</p></div></div>
       <div class="feat-item"><span class="feat-item-icon">📱</span><div class="feat-item-text"><h4>Material You</h4><p>Dynamic color theming that matches your wallpaper.</p></div></div>
-      <div class="feat-item"><span class="feat-item-icon">🔍</span><div class="feat-item-text"><h4>Search &amp; Discover</h4><p>Find artists, albums, and songs instantly.</p></div></div>
-      <div class="feat-item"><span class="feat-item-icon">⭐</span><div class="feat-item-text"><h4>Favorites</h4><p>Like and save songs to your local library.</p></div></div>
+      <div class="feat-item"><span class="feat-item-icon">🔀</span><div class="feat-item-text"><h4>Smart Queue</h4><p>Drag-to-reorder, shuffle, and repeat modes.</p></div></div>
       <div class="feat-item"><span class="feat-item-icon">🔔</span><div class="feat-item-text"><h4>Media Notification</h4><p>Full playback controls from the notification shade.</p></div></div>
+      <div class="feat-item"><span class="feat-item-icon">⚡</span><div class="feat-item-text"><h4>Fast &amp; Lightweight</h4><p>Quick startup, optimized for smooth performance.</p></div></div>
+      <div class="feat-item"><span class="feat-item-icon">🌍</span><div class="feat-item-text"><h4>Localized</h4><p>Community-translated into many languages.</p></div></div>
       <div class="feat-item"><span class="feat-item-icon">🛡️</span><div class="feat-item-text"><h4>Privacy First</h4><p>No analytics, no trackers. Your data stays yours.</p></div></div>
+      <div class="feat-item"><span class="feat-item-icon">🎯</span><div class="feat-item-text"><h4>Gesture Customization</h4><p>Flexible gestures and controls to shape the app around your workflow.</p></div></div>
+    </div>
+  </section>
+
+  <!-- DOWNLOAD -->
+  <section class="download-section reveal">
+    <span class="sec-eyebrow">Download</span>
+    <h2 class="sec-title">Get Sonora now.</h2>
+    <p class="sec-sub">Available on multiple platforms. Always free, always open source.</p>
+    <div class="download-grid">
+      <a class="dl-card primary-dl" href="https://github.com/koiverse/Sonora/releases/latest" target="_blank" rel="noopener">
+        <img src="https://raw.githubusercontent.com/koiverse/Sonora/refs/heads/main/assets/badge_github.png" alt="GitHub"/>
+        <span class="dl-card-label">GitHub Releases</span>
+      </a>
+      <a class="dl-card" href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/koiverse/Sonora/" target="_blank" rel="noopener">
+        <img src="https://github.com/ImranR98/Obtainium/blob/main/assets/graphics/badge_obtainium.png?raw=true" alt="Obtainium"/>
+        <span class="dl-card-label">Obtainium</span>
+      </a>
+      <a class="dl-card" href="https://apt.izzysoft.de/fdroid/index/apk/com.susil.sonora" target="_blank" rel="noopener">
+        <img src="https://raw.githubusercontent.com/koiverse/Sonora/757d5932832e1da27ced56de98c5ad1275cf0db1/assets/IzzyOnDroidButtonBorder.svg" alt="IzzyOnDroid"/>
+        <span class="dl-card-label">IzzyOnDroid</span>
+      </a>
+      <a class="dl-card" href="https://unclouded.app/apps/sonora/" target="_blank" rel="noopener">
+        <img src="https://raw.githubusercontent.com/koiverse/Sonora/refs/heads/dev/assets/badge_unclouded.png" alt="Unclouded"/>
+        <span class="dl-card-label">Unclouded</span>
+      </a>
+      <a class="dl-card" href="https://nightly.link/koiverse/Sonora/workflows/build/dev/app-universal-release" target="_blank" rel="noopener">
+        <img src="https://raw.githubusercontent.com/koiverse/Sonora/refs/heads/main/assets/badge_github.png" alt="Nightly"/>
+        <span class="dl-card-label">Nightly Build</span>
+      </a>
     </div>
   </section>
 
   <!-- CTA BANNER -->
   <div class="cta-banner reveal">
+    <div class="cta-banner-img">
+      <img src="https://raw.githubusercontent.com/koiverse/Sonora/refs/heads/dev/fastlane/metadata/android/en-US/images/SonoraFull.png" alt="Sonora Banner" loading="lazy"/>
+    </div>
     <h2>Open Source &amp; Free Forever</h2>
     <p>Sonora is MIT licensed. Fork it, contribute, or just enjoy the music.</p>
-    <div style="display:flex;justify-content:center;flex-wrap:wrap;gap:14px;">
-      <a class="btn-grad" href="https://github.com/susil-kumar/Sonora" target="_blank" rel="noopener">
+    <div class="cta-btns">
+      <a class="btn-grad" href="https://github.com/koiverse/Sonora" target="_blank" rel="noopener">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/></svg>
         Star on GitHub
       </a>
-      <a class="btn-outline" href="https://github.com/susil-kumar/Sonora/issues" target="_blank" rel="noopener">Report an Issue</a>
+      <a class="btn-outline" href="https://github.com/koiverse/Sonora/issues/new/choose" target="_blank" rel="noopener">Report an Issue</a>
+      <a class="btn-outline" href="https://t.me/SonoraGC" target="_blank" rel="noopener">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+        Telegram
+      </a>
     </div>
   </div>
 
   <!-- SUPPORT -->
-  <section style="padding-bottom:32px;" class="reveal">
-    <div style="text-align:center;margin-bottom:40px;">
-      <span class="sec-eyebrow">Support</span>
-      <h2 class="sec-title">Fuel the dev.</h2>
+  <section class="support-section reveal">
+    <div style="text-align:center">
+      <span class="sec-eyebrow">Support Development</span>
+      <h2 class="sec-title">Fuel the dev. ☕</h2>
     </div>
     <div class="support-card">
-      <div class="support-emoji">☕</div>
-      <h3>Buy Me a Coffee</h3>
-      <p>Sonora is built with passion as a free, open-source project. If it brings you joy, consider supporting development via UPI.</p>
-      <div class="upi-row">
-        <span class="upi-val" id="upiId">iamsusil@fam</span>
-        <button class="upi-copy" onclick="copyUPI()">Copy</button>
+      <div class="support-logo">
+        <img src="https://github.com/koiverse/Sonora/blob/main/fastlane/metadata/android/en-US/images/icon.png?raw=true" alt="Sonora"/>
       </div>
-      <p class="upi-hint">Open GPay, PhonePe, Paytm, or BHIM &rarr; Send money &rarr; paste the UPI ID. Thank you! 🙏</p>
+      <h3>Buy Me a Coffee</h3>
+      <p>Sonora is built with passion as a free, open-source project. If it brings you joy, consider supporting development — every contribution keeps the project alive!</p>
+      <a class="upi-btn" href="https://intradeus.github.io/http-protocol-redirector/?r=upi://pay?pa=iamsusil@fam&pn=Susil%20Kumar&am=&tn=Thank%20You%20so%20much%20for%20this%20support" target="_blank" rel="noopener">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+        Pay via UPI
+      </a>
+      <div class="upi-id-row">
+        <span class="upi-id-text" id="upiId">iamsusil@fam</span>
+        <button class="upi-copy-btn" onclick="copyUPI()">copy</button>
+      </div>
+      <p class="support-hint">Opens your UPI app directly &bull; GPay, PhonePe, Paytm, BHIM all supported<br>No minimum amount &bull; Thank you so much! 🙏</p>
     </div>
   </section>
 
   <!-- FOOTER -->
   <footer>
-    <span>© 2026 Sonora &mdash; Made with ♥ by Susil Kumar</span>
+    <div class="footer-brand">
+      <div class="footer-logo">
+        <img src="https://github.com/koiverse/Sonora/blob/main/fastlane/metadata/android/en-US/images/icon.png?raw=true" alt="Sonora"/>
+      </div>
+      <span>© 2026 Sonora &nbsp;&bull;&nbsp; Made with ♥ by Susil Kumar</span>
+    </div>
     <div class="footer-links">
-      <a href="https://github.com/susil-kumar/Sonora" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/koiverse/Sonora" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://t.me/SonoraGC" target="_blank" rel="noopener">Telegram</a>
       <a href="/health">Server Health</a>
     </div>
   </footer>
@@ -1420,15 +1328,15 @@ func (s *Server) handleLandingPage(w http.ResponseWriter, r *http.Request) {
 </div>
 
 <script>
-  // UPI copy
   function copyUPI() {
     const id = document.getElementById('upiId').textContent;
     navigator.clipboard.writeText(id).then(() => {
-      const btn = document.querySelector('.upi-copy');
+      const btn = document.querySelector('.upi-copy-btn');
       const orig = btn.textContent;
-      btn.textContent = 'Copied!';
-      btn.style.background = 'rgba(111,255,158,0.3)';
-      setTimeout(() => { btn.textContent = orig; btn.style.background = ''; }, 1800);
+      btn.textContent = 'copied!';
+      btn.style.color = 'var(--a4)';
+      btn.style.borderColor = 'rgba(111,255,158,0.3)';
+      setTimeout(() => { btn.textContent = orig; btn.style.color = ''; btn.style.borderColor = ''; }, 1800);
     });
   }
 
@@ -1436,13 +1344,13 @@ func (s *Server) handleLandingPage(w http.ResponseWriter, r *http.Request) {
   const ro = new IntersectionObserver((entries) => {
     entries.forEach((e, i) => {
       if (e.isIntersecting) {
-        setTimeout(() => e.target.classList.add('shown'), i * 60);
+        setTimeout(() => e.target.classList.add('shown'), i * 55);
         ro.unobserve(e.target);
       }
     });
-  }, { threshold: 0.08 });
-  document.querySelectorAll('.reveal, .bcard, .feat-item').forEach(el => {
-    if (!el.classList.contains('reveal')) { el.classList.add('reveal'); }
+  }, { threshold: 0.07 });
+  document.querySelectorAll('.reveal, .bcard, .feat-item, .dl-card, .screenshot-frame').forEach(el => {
+    if (!el.classList.contains('reveal')) el.classList.add('reveal');
     ro.observe(el);
   });
 
@@ -1450,20 +1358,17 @@ func (s *Server) handleLandingPage(w http.ResponseWriter, r *http.Request) {
   document.querySelectorAll('.bcard').forEach(card => {
     card.addEventListener('mousemove', e => {
       const r = card.getBoundingClientRect();
-      const x = ((e.clientX - r.left) / r.width * 100).toFixed(1) + '%';
-      const y = ((e.clientY - r.top) / r.height * 100).toFixed(1) + '%';
-      card.style.setProperty('--mx', x);
-      card.style.setProperty('--my', y);
+      card.style.setProperty('--mx', ((e.clientX - r.left) / r.width * 100).toFixed(1) + '%');
+      card.style.setProperty('--my', ((e.clientY - r.top) / r.height * 100).toFixed(1) + '%');
     });
   });
 
   // Animate mini chart bars
-  const chartBars = document.querySelectorAll('.mc-bar');
   setInterval(() => {
-    chartBars.forEach(b => {
-      b.style.height = (20 + Math.random() * 75) + '%';
+    document.querySelectorAll('.mc-bar').forEach(b => {
+      b.style.height = (18 + Math.random() * 78) + '%';
     });
-  }, 2000);
+  }, 1800);
 </script>
 </body>
 </html>`
@@ -1472,6 +1377,7 @@ func (s *Server) handleLandingPage(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(html))
 }
+
 
 
 func (s *Server) handleIssueToken(w http.ResponseWriter, r *http.Request) {
