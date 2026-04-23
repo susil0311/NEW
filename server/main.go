@@ -774,7 +774,7 @@ func (s *Server) handleTogetherWS(w http.ResponseWriter, r *http.Request) {
 	conn.SetReadDeadline(time.Time{})
 
 	var hello ClientHello
-	if err := json.Unmarshal(raw, &hello); err != nil || hello.Type != "hello" {
+	if err := json.Unmarshal(raw, &hello); err != nil || hello.Type != "client_hello" {
 		s.sendCodeError(conn, "", "Expected hello", "PROTO_ERROR")
 		return
 	}
@@ -806,7 +806,7 @@ func (s *Server) handleTogetherWS(w http.ResponseWriter, r *http.Request) {
 	// 4. Send current room state if available
 	if state := room.currentState(); state != nil {
 		state.Participants = room.snapshotParticipants()
-		_ = s.writeJSON(conn, RoomStateMessage{Type: "roomState", State: *state})
+		_ = s.writeJSON(conn, RoomStateMessage{Type: "room_state", State: *state})
 	}
 
 	// 5. Notify others
@@ -875,9 +875,9 @@ func (s *Server) registerPeer(room *Room, conn *websocket.Conn, hello ClientHell
 	}
 
 	participantID := randomHex(12)
-	role := "guest"
+	role := "GUEST"
 	if isHost {
-		role = "host"
+		role = "HOST"
 		participantID = room.Record.HostID
 	}
 
@@ -907,7 +907,7 @@ func (s *Server) registerPeer(room *Room, conn *websocket.Conn, hello ClientHell
 	}
 
 	return peer, ServerWelcome{
-		Type:            "welcome",
+		Type:            "server_welcome",
 		ProtocolVersion: hello.ProtocolVersion,
 		SessionID:       room.Record.SessionID,
 		ParticipantID:   participantID,
@@ -931,7 +931,7 @@ func (s *Server) unregisterPeer(room *Room, peer *Peer) {
 
 func (s *Server) handlePeerMessage(ctx context.Context, room *Room, peer *Peer, msg TogetherMessage) {
 	switch msg.Type {
-	case "roomState":
+	case "room_state":
 		if !peer.IsHost {
 			return
 		}
@@ -951,7 +951,7 @@ func (s *Server) handlePeerMessage(ctx context.Context, room *Room, peer *Peer, 
 		}()
 		s.broadcastToApproved(room, rsm, peer)
 
-	case "controlRequest":
+	case "control_request":
 		if !peer.IsHost && !room.Record.Settings.AllowGuestsToControlPlayback {
 			return
 		}
@@ -965,7 +965,7 @@ func (s *Server) handlePeerMessage(ctx context.Context, room *Room, peer *Peer, 
 			_ = s.writeJSON(host.Conn, cr)
 		}
 
-	case "addTrack":
+	case "add_track_request":
 		if !peer.IsHost && !room.Record.Settings.AllowGuestsToAddTracks {
 			return
 		}
@@ -979,7 +979,7 @@ func (s *Server) handlePeerMessage(ctx context.Context, room *Room, peer *Peer, 
 			_ = s.writeJSON(host.Conn, atr)
 		}
 
-	case "joinDecision":
+	case "join_decision":
 		if !peer.IsHost {
 			return
 		}
@@ -1001,12 +1001,12 @@ func (s *Server) handlePeerMessage(ctx context.Context, room *Room, peer *Peer, 
 			s.broadcastParticipantJoined(room, target.Participant)
 			if state := room.currentState(); state != nil {
 				state.Participants = room.snapshotParticipants()
-				_ = s.writeJSON(target.Conn, RoomStateMessage{Type: "roomState", State: *state})
+				_ = s.writeJSON(target.Conn, RoomStateMessage{Type: "room_state", State: *state})
 			}
 		} else {
 			reason := "rejected"
 			_ = s.writeJSON(target.Conn, ParticipantLeftMessage{
-				Type:          "participantLeft",
+				Type:          "participant_left",
 				SessionID:     room.Record.SessionID,
 				ParticipantID: target.Participant.ID,
 				Reason:        &reason,
@@ -1027,7 +1027,7 @@ func (s *Server) handlePeerMessage(ctx context.Context, room *Room, peer *Peer, 
 		}
 		reason := "kicked"
 		_ = s.writeJSON(target.Conn, ParticipantLeftMessage{
-			Type:          "participantLeft",
+			Type:          "participant_left",
 			SessionID:     room.Record.SessionID,
 			ParticipantID: target.Participant.ID,
 			Reason:        &reason,
@@ -1050,19 +1050,19 @@ func (s *Server) handlePeerMessage(ctx context.Context, room *Room, peer *Peer, 
 		room.mu.Unlock()
 		reason := "banned"
 		_ = s.writeJSON(target.Conn, ParticipantLeftMessage{
-			Type:          "participantLeft",
+			Type:          "participant_left",
 			SessionID:     room.Record.SessionID,
 			ParticipantID: target.Participant.ID,
 			Reason:        &reason,
 		})
 
-	case "heartbeatPing":
+	case "heartbeat_ping":
 		var ping HeartbeatPing
 		if err := json.Unmarshal(msg.Raw, &ping); err != nil {
 			return
 		}
 		_ = s.writeJSON(peer.Conn, HeartbeatPong{
-			Type:                  "heartbeatPong",
+			Type:                  "heartbeat_pong",
 			SessionID:             ping.SessionID,
 			PingID:                ping.PingID,
 			ClientElapsedRealtime: ping.ClientElapsedRealtime,
@@ -1104,7 +1104,7 @@ func (s *Server) sendCodeError(conn *websocket.Conn, sessionID, message, code st
 	}
 	cd := code
 	_ = s.writeJSON(conn, ServerError{
-		Type:      "error",
+		Type:      "server_error",
 		SessionID: sid,
 		Message:   message,
 		Code:      &cd,
@@ -1117,7 +1117,7 @@ func (s *Server) notifyHostJoinRequest(room *Room, participant TogetherParticipa
 		return
 	}
 	_ = s.writeJSON(host.Conn, JoinRequestMessage{
-		Type:        "joinRequest",
+		Type:        "join_request",
 		SessionID:   room.Record.SessionID,
 		Participant: participant,
 	})
@@ -1125,7 +1125,7 @@ func (s *Server) notifyHostJoinRequest(room *Room, participant TogetherParticipa
 
 func (s *Server) broadcastParticipantJoined(room *Room, participant TogetherParticipant) {
 	s.broadcastToApproved(room, ParticipantJoinedMessage{
-		Type:        "participantJoined",
+		Type:        "participant_joined",
 		SessionID:   room.Record.SessionID,
 		Participant: participant,
 	}, nil)
@@ -1133,7 +1133,7 @@ func (s *Server) broadcastParticipantJoined(room *Room, participant TogetherPart
 
 func (s *Server) broadcastParticipantLeft(room *Room, participantID string, reason *string) {
 	s.broadcastToApproved(room, ParticipantLeftMessage{
-		Type:          "participantLeft",
+		Type:          "participant_left",
 		SessionID:     room.Record.SessionID,
 		ParticipantID: participantID,
 		Reason:        reason,
