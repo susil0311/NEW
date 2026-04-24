@@ -1,18 +1,22 @@
-# ── Build stage ──────────────────────────────────────────────────
+# Build stage
 FROM golang:1.23-alpine AS builder
 
 WORKDIR /app
-COPY go.mod go.sum* ./
+
+COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -o sonora-server ./...
+RUN CGO_ENABLED=0 GOOS=linux go build -o sonora-server .
 
-# ── Runtime stage ─────────────────────────────────────────────────
+# Run stage
 FROM alpine:3.19
-RUN apk add --no-cache ca-certificates tzdata
+
+RUN apk --no-cache add ca-certificates tzdata
+
 WORKDIR /app
 COPY --from=builder /app/sonora-server .
 
 EXPOSE 8080
+
 CMD ["./sonora-server"]
