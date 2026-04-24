@@ -1,21 +1,49 @@
 services:
+  # ──────────────────────────────────────────────────────────────
+  #  Sonora – Listen Together  (Render Web Service)
+  # ──────────────────────────────────────────────────────────────
   - type: web
-    name: sonora-server
+    name: sonora-together
     runtime: go
-    rootDir: server
-    plan: free
-    autoDeploy: true
-    buildCommand: go mod tidy && go build -o sonora-server main.go
+    rootDir: server          # the directory that contains main.go
+    buildCommand: go build -o sonora-server ./...
     startCommand: ./sonora-server
-    healthCheckPath: /health
+    plan: starter            # upgrade to standard for production
+
+    # Render auto-assigns PORT; the Go server reads it via os.Getenv("PORT")
     envVars:
+      # ── Required ──────────────────────────────────────────────
+      - key: DATABASE_URL
+        # Paste the Supabase "Transaction" pooler string here.
+        # Format: postgres://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres
+        # Mark as secret so Render encrypts it at rest.
+        sync: false           # set manually in Render dashboard → Environment
+
       - key: JWT_SIGNING_KEY
-        sync: false
+        generateValue: true   # Render generates a random value on first deploy
+
+      # ── Optional / tuning ─────────────────────────────────────
       - key: TOKEN_ISSUER
-        value: sonora-self-hosted
+        value: sonora
+
       - key: TOKEN_TTL_MINUTES
         value: "60"
+
+      - key: ROOM_TTL_MINUTES
+        value: "360"          # rooms expire 6 h after last activity
+
+      - key: WS_WRITE_TIMEOUT_SECONDS
+        value: "5"
+
+      # Canvas upstream (leave blank if unused)
       - key: CANVAS_UPSTREAM_BASE_URL
-        value: https://artwork-sonora.koiiverse.cloud
+        value: ""
+
       - key: CANVAS_UPSTREAM_TOKEN
         sync: false
+
+    healthCheckPath: /health
+
+    # Keep the WS connection alive through Render's proxy.
+    # Render terminates idle HTTP connections after ~75 s by default.
+    # The Android client should send a heartbeatPing every ~30 s.

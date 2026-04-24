@@ -17,8 +17,10 @@ const val TogetherProtocolVersion: Int = 1
 @Serializable
 sealed interface TogetherMessage
 
+// ─── Client → Server ──────────────────────────────────────────────────────────
+// Server expects: hello.Type == "hello"
 @Serializable
-@SerialName("client_hello")
+@SerialName("hello")
 @Immutable
 data class ClientHello(
     val protocolVersion: Int,
@@ -28,36 +30,16 @@ data class ClientHello(
     val displayName: String,
 ) : TogetherMessage
 
-@Serializable
-@SerialName("server_welcome")
-@Immutable
-data class ServerWelcome(
-    val protocolVersion: Int,
-    val sessionId: String,
-    val participantId: String,
-    val role: ServerRole,
-    val isPending: Boolean,
-    val settings: TogetherRoomSettings,
-) : TogetherMessage
+// Server reads incoming type from a case switch:
+// "controlRequest"  →  ControlRequest
+// "heartbeatPing"   →  HeartbeatPing
+// "joinDecision"    →  JoinDecision
+// "addTrack"        →  AddTrackRequest
+// "kick" / "ban"    →  KickParticipant / BanParticipant
+// "clientLeave"     →  ClientLeave  (implied by peer disconnect / explicit leave)
 
 @Serializable
-@SerialName("server_error")
-@Immutable
-data class ServerError(
-    val sessionId: String?,
-    val message: String,
-    val code: String? = null,
-) : TogetherMessage
-
-@Serializable
-@SerialName("room_state")
-@Immutable
-data class RoomStateMessage(
-    val state: TogetherRoomState,
-) : TogetherMessage
-
-@Serializable
-@SerialName("control_request")
+@SerialName("controlRequest")
 @Immutable
 data class ControlRequest(
     val sessionId: String,
@@ -66,7 +48,7 @@ data class ControlRequest(
 ) : TogetherMessage
 
 @Serializable
-@SerialName("add_track_request")
+@SerialName("addTrack")
 @Immutable
 data class AddTrackRequest(
     val sessionId: String,
@@ -76,7 +58,7 @@ data class AddTrackRequest(
 ) : TogetherMessage
 
 @Serializable
-@SerialName("join_decision")
+@SerialName("joinDecision")
 @Immutable
 data class JoinDecision(
     val sessionId: String,
@@ -85,32 +67,7 @@ data class JoinDecision(
 ) : TogetherMessage
 
 @Serializable
-@SerialName("join_request")
-@Immutable
-data class JoinRequest(
-    val sessionId: String,
-    val participant: TogetherParticipant,
-) : TogetherMessage
-
-@Serializable
-@SerialName("participant_joined")
-@Immutable
-data class ParticipantJoined(
-    val sessionId: String,
-    val participant: TogetherParticipant,
-) : TogetherMessage
-
-@Serializable
-@SerialName("participant_left")
-@Immutable
-data class ParticipantLeft(
-    val sessionId: String,
-    val participantId: String,
-    val reason: String? = null,
-) : TogetherMessage
-
-@Serializable
-@SerialName("heartbeat_ping")
+@SerialName("heartbeatPing")
 @Immutable
 data class HeartbeatPing(
     val sessionId: String,
@@ -119,17 +76,7 @@ data class HeartbeatPing(
 ) : TogetherMessage
 
 @Serializable
-@SerialName("heartbeat_pong")
-@Immutable
-data class HeartbeatPong(
-    val sessionId: String,
-    val pingId: Long,
-    val clientElapsedRealtimeMs: Long,
-    val serverElapsedRealtimeMs: Long,
-) : TogetherMessage
-
-@Serializable
-@SerialName("client_leave")
+@SerialName("clientLeave")
 @Immutable
 data class ClientLeave(
     val sessionId: String,
@@ -153,6 +100,79 @@ data class BanParticipant(
     val participantId: String,
     val reason: String? = null,
 ) : TogetherMessage
+
+// ─── Server → Client ──────────────────────────────────────────────────────────
+// Server sends: Type: "welcome"
+@Serializable
+@SerialName("welcome")
+@Immutable
+data class ServerWelcome(
+    val protocolVersion: Int,
+    val sessionId: String,
+    val participantId: String,
+    val role: ServerRole,
+    val isPending: Boolean,
+    val settings: TogetherRoomSettings,
+) : TogetherMessage
+
+// Server sends: Type: "error"
+@Serializable
+@SerialName("error")
+@Immutable
+data class ServerError(
+    val sessionId: String?,
+    val message: String,
+    val code: String? = null,
+) : TogetherMessage
+
+// Server sends: Type: "roomState"
+@Serializable
+@SerialName("roomState")
+@Immutable
+data class RoomStateMessage(
+    val state: TogetherRoomState,
+) : TogetherMessage
+
+// Server sends: Type: "joinRequest"
+@Serializable
+@SerialName("joinRequest")
+@Immutable
+data class JoinRequest(
+    val sessionId: String,
+    val participant: TogetherParticipant,
+) : TogetherMessage
+
+// Server sends: Type: "participantJoined"
+@Serializable
+@SerialName("participantJoined")
+@Immutable
+data class ParticipantJoined(
+    val sessionId: String,
+    val participant: TogetherParticipant,
+) : TogetherMessage
+
+// Server sends: Type: "participantLeft"
+@Serializable
+@SerialName("participantLeft")
+@Immutable
+data class ParticipantLeft(
+    val sessionId: String,
+    val participantId: String,
+    val reason: String? = null,
+) : TogetherMessage
+
+// Server sends: Type: "heartbeatPong"
+@Serializable
+@SerialName("heartbeatPong")
+@Immutable
+data class HeartbeatPong(
+    val sessionId: String,
+    val pingId: Long,
+    val clientElapsedRealtimeMs: Long,
+    val serverElapsedRealtimeMs: Long,
+) : TogetherMessage
+
+// ─── Enums & sealed actions ───────────────────────────────────────────────────
 
 @Serializable
 enum class ServerRole {

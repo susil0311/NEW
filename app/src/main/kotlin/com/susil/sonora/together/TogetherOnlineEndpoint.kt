@@ -3,9 +3,17 @@
  * Chartreux Westia (github.com/koiverse)
  * Licensed Under GPL-3.0 | see git history for contributors
  * Don't remove this copyright holder!
+ *
+ * CHANGES (Render + Supabase edition)
+ *  • RENDER_BASE_URL is now the primary hard-coded endpoint.
+ *  • The GitHub text-file mechanism still works as a dynamic override
+ *    (useful if you ever change your Render URL or add a custom domain).
+ *  • Resolution order:
+ *      1. DataStore user override  (Settings screen, if you expose one)
+ *      2. GitHub text-file fetch   (cached 6 h)
+ *      3. RENDER_BASE_URL          ← new hard-coded fallback
  */
 
- 
 package com.susil.sonora.together
 
 import androidx.datastore.core.DataStore
@@ -23,13 +31,24 @@ import com.susil.sonora.constants.TogetherOnlineEndpointOverrideKey
 import com.susil.sonora.utils.getAsync
 
 object TogetherOnlineEndpoint {
+
+    /**
+     * ╔══════════════════════════════════════════════════════════╗
+     * ║  SET THIS to your Render service URL after deployment.  ║
+     * ║  Example: "https://sonora-together.onrender.com"        ║
+     * ╚══════════════════════════════════════════════════════════╝
+     */
+    private const val RENDER_BASE_URL = "https://new-mdkg.onrender.com"
+
+    // Dynamic source URLs (optional – lets you change the server URL
+    // without shipping a new APK by updating a text file on GitHub).
     private const val EndpointSourceUrl =
         "https://raw.githubusercontent.com/koiverse/Sonora/refs/heads/dev/SonoraKoiverseServer.txt"
 
     private const val EndpointSourceUrlFallback =
         "https://raw.githubusercontent.com/koiverse/Sonora/main/SonoraKoiverseServer.txt"
 
-    private const val CacheTtlMs: Long = 6 * 60 * 60 * 1000L
+    private const val CacheTtlMs: Long = 6 * 60 * 60 * 1000L  // 6 hours
 
     private val httpClient =
         HttpClient(OkHttp) {
@@ -43,11 +62,22 @@ object TogetherOnlineEndpoint {
             }
         }
 
+    /**
+     * Returns the base URL to use for the Together server, or null
+     * if nothing is available (which should never happen once
+     * RENDER_BASE_URL is set).
+     *
+     * Resolution order:
+     *   1. Manual override stored in DataStore (e.g. from Settings screen)
+     *   2. GitHub text-file (dynamic, cached 6 h)
+     *   3. RENDER_BASE_URL  (hard-coded Render service)
+     */
     suspend fun baseUrlOrNull(
         dataStore: DataStore<Preferences>,
     ): String? {
         val now = System.currentTimeMillis()
 
+        // 1. Manual override
         val override =
             dataStore.getAsync(TogetherOnlineEndpointOverrideKey)
                 ?.trim()
@@ -55,6 +85,7 @@ object TogetherOnlineEndpoint {
                 .trimEnd('/')
         if (override.isNotBlank() && isValidHttpBaseUrl(override)) return override
 
+        // 2. GitHub text-file (cached)
         val cached = dataStore.getAsync(TogetherOnlineEndpointCacheKey)?.trim().orEmpty()
         val lastCheckedAt = dataStore.getAsync(TogetherOnlineEndpointLastCheckedAtKey, 0L)
 
@@ -69,17 +100,16 @@ object TogetherOnlineEndpoint {
             return fetched
         }
 
-        if (cached.isNotBlank()) {
-            dataStore.edit { prefs ->
-                prefs[TogetherOnlineEndpointLastCheckedAtKey] = now
-            }
-            return cached
-        }
-
+        // Update last-checked even if fetch failed, so we don't hammer on error
         dataStore.edit { prefs ->
             prefs[TogetherOnlineEndpointLastCheckedAtKey] = now
         }
-        return null
+
+        // Return stale cache if available
+        if (cached.isNotBlank()) return cached
+
+        // 3. Hard-coded Render URL
+        return RENDER_BASE_URL.takeIf { it.isNotBlank() && isValidHttpBaseUrl(it) }
     }
 
     private suspend fun fetchEndpointFromSourceOrNull(): String? {
@@ -109,8 +139,7 @@ object TogetherOnlineEndpoint {
         val scheme = uri.scheme?.trim()?.lowercase()
         if (scheme != "http" && scheme != "https") return false
         val host = uri.host?.trim().orEmpty()
-        if (host.isBlank()) return false
-        return true
+        return host.isNotBlank()
     }
 
     fun onlineWebSocketUrlOrNull(
@@ -141,29 +170,23 @@ object TogetherOnlineEndpoint {
         }
     }
 
-    private fun deriveWebSocketUrlFromBaseUrl(
-        baseUrl: String,
-    ): String? {
+    private fun deriveWebSocketUrlFromBaseUrl(baseUrl: String): String? {
         val uri = runCatching { URI(baseUrl.trim()) }.getOrNull() ?: return null
         val host = uri.host?.trim()?.ifBlank { null } ?: return null
         val scheme = uri.scheme?.trim()?.lowercase()
         val wsScheme = if (scheme == "https") "wss" else "ws"
-
-        val portPart = if (uri.port != -1 && uri.port != 80 && uri.port != 443) ":${uri.port}" else ""
+        val portPart =
+            if (uri.port != -1 && uri.port != 80 && uri.port != 443) ":${uri.port}" else ""
         val normalizedPath =
             uri.path
                 ?.trim()
                 ?.trimEnd('/')
                 .orEmpty()
                 .let { if (it.endsWith("/v1")) it else "$it/v1" }
-
         return "$wsScheme://$host$portPart$normalizedPath/together/ws"
     }
 
-    private fun normalizeWebSocketUrl(
-        raw: String,
-        baseUrl: String,
-    ): String? {
+    private fun normalizeWebSocketUrl(raw: String, baseUrl: String): String? {
         val trimmed = raw.trim()
         if (trimmed.isBlank()) return null
         if (trimmed.startsWith("ws://") || trimmed.startsWith("wss://")) return trimmed
@@ -174,12 +197,13 @@ object TogetherOnlineEndpoint {
             val host = baseUri.host?.trim()?.ifBlank { null } ?: return null
             val scheme = baseUri.scheme?.trim()?.lowercase()
             val wsScheme = if (scheme == "https") "wss" else "ws"
-            val portPart = if (baseUri.port != -1 && baseUri.port != 80 && baseUri.port != 443) ":${baseUri.port}" else ""
+            val portPart =
+                if (baseUri.port != -1 && baseUri.port != 80 && baseUri.port != 443) ":${baseUri.port}" else ""
             val basePath = baseUri.path?.trim()?.trimEnd('/').orEmpty()
             return "$wsScheme://$host$portPart$basePath$trimmed"
         }
-
-        val baseScheme = runCatching { URI(baseUrl.trim()).scheme?.trim()?.lowercase() }.getOrNull()
+        val baseScheme =
+            runCatching { URI(baseUrl.trim()).scheme?.trim()?.lowercase() }.getOrNull()
         val wsScheme = if (baseScheme == "https") "wss" else "ws"
         return "$wsScheme://$trimmed"
     }
