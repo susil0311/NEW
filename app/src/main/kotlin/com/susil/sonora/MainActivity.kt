@@ -176,12 +176,15 @@ import com.susil.sonora.constants.DynamicThemeKey
 import com.susil.sonora.constants.FloatingToolbarBottomPadding
 import com.susil.sonora.constants.FloatingToolbarHeight
 import com.susil.sonora.constants.FloatingToolbarHorizontalPadding
+import com.susil.sonora.constants.HasPressedStarKey
+import com.susil.sonora.constants.LaunchCountKey
 import com.susil.sonora.constants.MiniPlayerBottomSpacing
 import com.susil.sonora.constants.MiniPlayerHeight
 import com.susil.sonora.constants.MiniPlayerLastAnchorKey
 import com.susil.sonora.constants.NavigationBarAnimationSpec
 import com.susil.sonora.constants.PauseSearchHistoryKey
 import com.susil.sonora.constants.PureBlackKey
+import com.susil.sonora.constants.RemindAfterKey
 import com.susil.sonora.constants.SYSTEM_DEFAULT
 import com.susil.sonora.constants.SearchSource
 import com.susil.sonora.constants.SearchSourceKey
@@ -223,6 +226,7 @@ import com.susil.sonora.ui.component.IconButton
 import com.susil.sonora.ui.component.LocalBottomSheetPageState
 import com.susil.sonora.ui.component.LocalMenuState
 import com.susil.sonora.ui.component.NetworkStatusBanner
+import com.susil.sonora.ui.component.StarDialog
 import com.susil.sonora.ui.component.TvNavigationRail
 import com.mikepenz.markdown.m3.Markdown
 import com.susil.sonora.ui.component.TopSearch
@@ -983,13 +987,15 @@ class MainActivity : ComponentActivity() {
                         }
                     }
 
-                    LaunchedEffect(isTvDevice, active, currentRoute, shouldShowNavigationBar) {
+                    LaunchedEffect(isTvDevice, useRail, active, currentRoute, shouldShowNavigationBar) {
                         if (
                             isTvDevice &&
+                            useRail &&
                             shouldShowNavigationBar &&
                             !active &&
                             currentRoute in topLevelScreens
                         ) {
+                            delay(100)
                             tvRailFocusRequester.requestFocus()
                         }
                     }

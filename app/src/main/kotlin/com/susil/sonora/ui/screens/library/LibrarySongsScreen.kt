@@ -44,6 +44,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
@@ -58,6 +59,7 @@ import com.susil.sonora.LocalPlayerConnection
 import com.susil.sonora.R
 import com.susil.sonora.constants.CONTENT_TYPE_HEADER
 import com.susil.sonora.constants.CONTENT_TYPE_SONG
+import com.susil.sonora.constants.DisableBlurKey
 import com.susil.sonora.constants.HideExplicitKey
 import com.susil.sonora.constants.SongFilter
 import com.susil.sonora.constants.SongFilterKey
@@ -101,6 +103,7 @@ fun LibrarySongsScreen(
     val (sortDescending, onSortDescendingChange) = rememberPreference(SongSortDescendingKey, true)
 
     val (ytmSync) = rememberPreference(YtmSyncKey, true)
+    val (disableBlur) = rememberPreference(DisableBlurKey, false)
     val hideExplicit by rememberPreference(key = HideExplicitKey, defaultValue = false)
 
     val songs by viewModel.allSongs.collectAsState()
@@ -309,6 +312,11 @@ fun LibrarySongsScreen(
                         }
                     },
                     isSelected = songWrapper.isSelected && selection,
+                    swipeContentBackgroundColor = if (disableBlur) {
+                        MaterialTheme.colorScheme.surface
+                    } else {
+                        Color.Transparent
+                    },
                     modifier =
                     Modifier
                         .fillMaxWidth()
